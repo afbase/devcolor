@@ -77,6 +77,15 @@
     card.appendChild(runRow);
     card.appendChild(out);
 
+    // "Run it yourself" accordion: the exact curl for each side, generated live
+    // from the current input values, each with a Copy button.
+    var det = el('details', 'curl');
+    det.appendChild(el('summary', null, '⌨️  Run this from your terminal (curl)'));
+    var curlBody = el('div', 'curlbody');
+    det.appendChild(curlBody);
+    det.addEventListener('toggle', function () { if (det.open) renderCurl(a, inputs, curlBody); });
+    card.appendChild(det);
+
     if (a.expect) {
       var ex = el('div', 'expect');
       if (a.expect.vuln) { var bv = el('b', 'v', 'vuln: '); ex.appendChild(bv); ex.appendChild(document.createTextNode(a.expect.vuln + '  ')); }
@@ -103,9 +112,101 @@
     return url;
   }
 
-  function run(a, s, inputEls, out) {
+  // Build the exact request an action makes — used by BOTH the Run buttons and
+  // the "curl" accordion, so the copy-paste command can never drift from what
+  // the button actually sends. Returns {url, method, headers, body, err}.
+  function buildRequest(a, s, vals) {
+    var url = buildUrl(a, s, vals);
+    var method = a.method || 'GET';
+    var headers = {};
+    if (a.headers) Object.keys(a.headers).forEach(function (h) { headers[h] = subst(a.headers[h], vals); });
+    var body = null;
+    if (method !== 'GET') {
+      if (a.rawBody) {
+        headers['content-type'] = 'application/json';
+        try { body = JSON.stringify(JSON.parse(subst(a.rawBody, vals))); }
+        catch (e) { return { url: url, method: method, headers: headers, body: null, err: 'bad JSON in body: ' + e.message }; }
+      } else {
+        var b = {};
+        if (a.body) Object.keys(a.body).forEach(function (k) { b[k] = subst(a.body[k], vals); });
+        (a.inputs || []).forEach(function (inp) {
+          if (inp.in !== 'body') return;
+          if (inp.json) { try { b[inp.name] = JSON.parse(vals[inp.name]); } catch (e) { b[inp.name] = vals[inp.name]; } }
+          else b[inp.name] = vals[inp.name];
+        });
+        if ((a.bodyType || 'json') === 'form') {
+          headers['content-type'] = 'application/x-www-form-urlencoded';
+          body = new URLSearchParams(b).toString();
+        } else {
+          headers['content-type'] = 'application/json';
+          body = JSON.stringify(b);
+        }
+      }
+    }
+    return { url: url, method: method, headers: headers, body: body, err: null };
+  }
+
+  // Wrap a value as a single-quoted shell argument, safely — payloads can
+  // contain ' (SQLi, XSS), and encodeURIComponent leaves ' literal in URLs.
+  function sq(v) { return "'" + String(v).replace(/'/g, "'\\''") + "'"; }
+
+  // Format a request as a copy-pasteable, shell-safe curl one-liner.
+  function buildCurl(a, s, vals) {
+    var req = buildRequest(a, s, vals);
+    var parts = ['curl -s'];
+    if (req.method !== 'GET') parts.push('-X ' + req.method);
+    Object.keys(req.headers).forEach(function (h) {
+      parts.push('-H ' + sq(h + ': ' + req.headers[h]));
+    });
+    if (req.body != null) parts.push('-d ' + sq(req.body));
+    parts.push(sq(location.origin + req.url));
+    return parts.join(' ');
+  }
+
+  function readVals(inputEls) {
     var vals = {};
     Object.keys(inputEls).forEach(function (k) { vals[k] = inputEls[k].value; });
+    return vals;
+  }
+
+  function flash(btn) { btn.textContent = 'Copied!'; setTimeout(function () { btn.textContent = 'Copy'; }, 1200); }
+  function copyText(text, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { flash(btn); }, function () { legacyCopy(text, btn); });
+    } else { legacyCopy(text, btn); }
+  }
+  function legacyCopy(text, btn) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta); flash(btn);
+    } catch (e) { /* no-op */ }
+  }
+
+  // Render one curl block per side (recomputed from current inputs each time the
+  // accordion opens, so the command always matches what the buttons would send).
+  function renderCurl(a, inputEls, container) {
+    container.innerHTML = '';
+    var vals = readVals(inputEls);
+    (a.sides || ['vuln', 'safe']).forEach(function (s) {
+      var block = el('div', 'curlblock');
+      block.appendChild(el('div', 'curlhead ' + s, s === 'vuln' ? '/vuln — broken' : '/safe — fixed'));
+      var wrap = el('div', 'codewrap');
+      var cmd = buildCurl(a, s, vals);
+      wrap.appendChild(el('code', null, cmd));
+      var copy = el('button', 'copy', 'Copy');
+      copy.onclick = function () { copyText(cmd, copy); };
+      wrap.appendChild(copy);
+      block.appendChild(wrap);
+      container.appendChild(block);
+    });
+    if (a.render === 'iframe') {
+      container.appendChild(el('div', 'curlnote', 'This action renders HTML — in a terminal the curl shows the raw response; in the page it runs live in a frame.'));
+    }
+  }
+
+  function run(a, s, inputEls, out) {
+    var vals = readVals(inputEls);
     var url = buildUrl(a, s, vals);
     var method = a.method || 'GET';
     out.className = 'out show';
@@ -119,39 +220,10 @@
       return;
     }
 
-    var opts = { method: method, headers: {} };
-    if (a.headers) Object.keys(a.headers).forEach(function (h) { opts.headers[h] = subst(a.headers[h], vals); });
-    if (method !== 'GET') {
-      // rawBody: send an arbitrary JSON document (with {placeholders}) verbatim.
-      // This is how the array/nested-object exploits are driven from the UI —
-      // coupon stacking (["WELCOME10", ...]) and prototype pollution
-      // ({"__proto__":{"isAdmin":true}}) — which a flat string body can't express.
-      if (a.rawBody) {
-        opts.headers['content-type'] = 'application/json';
-        try {
-          opts.body = JSON.stringify(JSON.parse(subst(a.rawBody, vals)));
-        } catch (e) {
-          out.appendChild(el('pre', null, 'bad JSON in body: ' + e.message));
-          return;
-        }
-      } else {
-        var body = {};
-        if (a.body) Object.keys(a.body).forEach(function (k) { body[k] = subst(a.body[k], vals); });
-        (a.inputs || []).forEach(function (inp) {
-          if (inp.in !== 'body') return;
-          // inputs marked json:true carry a JSON literal (array/object/number).
-          if (inp.json) { try { body[inp.name] = JSON.parse(vals[inp.name]); } catch (e) { body[inp.name] = vals[inp.name]; } }
-          else body[inp.name] = vals[inp.name];
-        });
-        if ((a.bodyType || 'json') === 'form') {
-          opts.headers['content-type'] = 'application/x-www-form-urlencoded';
-          opts.body = new URLSearchParams(body).toString();
-        } else {
-          opts.headers['content-type'] = 'application/json';
-          opts.body = JSON.stringify(body);
-        }
-      }
-    }
+    var req = buildRequest(a, s, vals);
+    if (req.err) { out.appendChild(el('pre', null, req.err)); return; }
+    var opts = { method: req.method, headers: req.headers };
+    if (req.body != null) opts.body = req.body;
 
     var pre = el('pre', null, '… running');
     out.appendChild(pre);
