@@ -65,25 +65,32 @@
     });
     if ((a.inputs || []).length) card.appendChild(fields);
 
+    // PRIMARY, always visible: the exact commands to run by hand. They update
+    // live as you edit the inputs, and each has a Copy button.
+    var term = el('div', 'terminal');
+    term.appendChild(el('div', 'termhead', '⌨️  Try it yourself — copy into your terminal'));
+    var curlBody = el('div', 'curlbody');
+    term.appendChild(curlBody);
+    card.appendChild(term);
+    Object.keys(inputs).forEach(function (k) {
+      inputs[k].addEventListener('input', function () { renderCurl(a, inputs, curlBody); });
+      inputs[k].addEventListener('change', function () { renderCurl(a, inputs, curlBody); });
+    });
+    renderCurl(a, inputs, curlBody);
+    if (a.hint) card.appendChild(el('div', 'termhint', '💡 ' + a.hint));
+
+    // SECONDARY, tucked away: the same requests as one-click buttons.
     var out = el('div', 'out');
+    var det = el('details', 'clicky');
+    det.appendChild(el('summary', null, '🖱️ Prefer clicking? Run it in the browser instead'));
     var runRow = el('div', 'run');
-    var sides = a.sides || ['vuln', 'safe'];
-    sides.forEach(function (s) {
+    (a.sides || ['vuln', 'safe']).forEach(function (s) {
       var btn = el('button', 'go ' + s, s === 'vuln' ? 'Run on /vuln' : 'Run on /safe');
       btn.onclick = function () { run(a, s, inputs, out); };
       runRow.appendChild(btn);
     });
-    if (a.hint) runRow.appendChild(el('span', 'hint', a.hint));
-    card.appendChild(runRow);
-    card.appendChild(out);
-
-    // "Run it yourself" accordion: the exact curl for each side, generated live
-    // from the current input values, each with a Copy button.
-    var det = el('details', 'curl');
-    det.appendChild(el('summary', null, '⌨️  Run this from your terminal (curl)'));
-    var curlBody = el('div', 'curlbody');
-    det.appendChild(curlBody);
-    det.addEventListener('toggle', function () { if (det.open) renderCurl(a, inputs, curlBody); });
+    det.appendChild(runRow);
+    det.appendChild(out);
     card.appendChild(det);
 
     if (a.expect) {
