@@ -1,0 +1,44 @@
+groups:
+  - name: security
+    rules:
+      - alert: BruteForceSuspected
+        expr: increase(lab_security_alerts_total{kind="brute_force"}[1m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Brute-force attack suspected (A09)'
+          description: >-
+            The application raised a brute_force security alert
+            (lab_security_alerts_total{kind="brute_force"}) in the last minute.
+            This maps to OWASP Top 10:2025 A09 Security Logging & Alerting
+            Failures: the SAFE endpoints emit this signal so the attack is
+            detectable. An identical attack against the VULN endpoints raises
+            no such alert and stays invisible.
+
+      - alert: HighAuthFailureRate
+        expr: sum(rate(lab_auth_attempts_total{result="failure"}[1m])) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'High authentication failure rate (A09)'
+          description: >-
+            Authentication failures
+            (rate(lab_auth_attempts_total{result="failure"}[1m])) have exceeded
+            0.5/s for over a minute, indicating credential stuffing or
+            brute-force activity. Under A09, a system that does not surface this
+            rate has a logging & alerting failure.
+
+      - alert: NoTelemetryFromLab
+        expr: up{job="owasp-lab"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'No telemetry from the OWASP lab target (A09)'
+          description: >-
+            Prometheus cannot scrape the lab target (up{job="owasp-lab"} == 0)
+            for over a minute. Missing telemetry is itself an A09 Security
+            Logging & Alerting Failure: when the monitored system stops
+            reporting, attacks proceed unobserved and no other alert can fire.
