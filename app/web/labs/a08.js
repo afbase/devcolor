@@ -50,15 +50,21 @@ Play with my services below. Sneak a dangerous key past my deep-merge, or ship m
         },
       },
       {
-        id: 'prefs-dangerous',
-        title: 'Smuggle a dangerous key into the merge',
-        description: 'Send a "constructor" key alongside your prefs. The vuln deep-merge walks every key with no filtering and writes it onto the object; the fixed side refuses any of __proto__ / constructor / prototype outright.',
+        id: 'prefs-pollute',
+        title: 'Poison every object with __proto__',
+        description: 'Send a nested __proto__ in the preferences body. The vuln deep-merge walks it and writes onto Object.prototype, so a brand-new unrelated object suddenly has isAdmin. The fixed side refuses __proto__ / constructor / prototype outright. Edit the payload and run both sides.',
         method: 'POST', path: '/preferences',
-        body: { constructor: 'pollute-me', theme: 'dark' },
-        hint: 'Full prototype pollution (nested __proto__) needs a raw body: curl -s -XPOST localhost:8080/vuln/a08/preferences -H \'content-type: application/json\' -d \'{"__proto__":{"isAdmin":true,"role":"admin"}}\' — watch pollutedBystanderObject light up.',
+        // Real pollution vector, driven straight from the form.
+        rawBody: '{"__proto__": {"isAdmin": {isAdmin}, "role": "{role}"}, "theme": "{theme}"}',
+        inputs: [
+          { name: 'isAdmin', label: 'inject isAdmin', default: 'true', options: ['true', 'false'] },
+          { name: 'role', label: 'inject role', default: 'admin' },
+          { name: 'theme', label: 'theme (legit key)', default: 'dark' },
+        ],
+        hint: 'Watch pollutedBystanderObject — that object was never in the merge.',
         expect: {
-          vuln: 'accepts "constructor" and echoes it into merged (200)',
-          safe: '400 — refused dangerous key: constructor',
+          vuln: 'pollutedBystanderObject.isAdmin becomes true (200)',
+          safe: '400 — refused dangerous key; bystander stays clean',
         },
       },
       {

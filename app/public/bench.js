@@ -122,15 +122,34 @@
     var opts = { method: method, headers: {} };
     if (a.headers) Object.keys(a.headers).forEach(function (h) { opts.headers[h] = subst(a.headers[h], vals); });
     if (method !== 'GET') {
-      var body = {};
-      if (a.body) Object.keys(a.body).forEach(function (k) { body[k] = subst(a.body[k], vals); });
-      (a.inputs || []).forEach(function (inp) { if (inp.in === 'body') body[inp.name] = vals[inp.name]; });
-      if ((a.bodyType || 'json') === 'form') {
-        opts.headers['content-type'] = 'application/x-www-form-urlencoded';
-        opts.body = new URLSearchParams(body).toString();
-      } else {
+      // rawBody: send an arbitrary JSON document (with {placeholders}) verbatim.
+      // This is how the array/nested-object exploits are driven from the UI —
+      // coupon stacking (["WELCOME10", ...]) and prototype pollution
+      // ({"__proto__":{"isAdmin":true}}) — which a flat string body can't express.
+      if (a.rawBody) {
         opts.headers['content-type'] = 'application/json';
-        opts.body = JSON.stringify(body);
+        try {
+          opts.body = JSON.stringify(JSON.parse(subst(a.rawBody, vals)));
+        } catch (e) {
+          out.appendChild(el('pre', null, 'bad JSON in body: ' + e.message));
+          return;
+        }
+      } else {
+        var body = {};
+        if (a.body) Object.keys(a.body).forEach(function (k) { body[k] = subst(a.body[k], vals); });
+        (a.inputs || []).forEach(function (inp) {
+          if (inp.in !== 'body') return;
+          // inputs marked json:true carry a JSON literal (array/object/number).
+          if (inp.json) { try { body[inp.name] = JSON.parse(vals[inp.name]); } catch (e) { body[inp.name] = vals[inp.name]; } }
+          else body[inp.name] = vals[inp.name];
+        });
+        if ((a.bodyType || 'json') === 'form') {
+          opts.headers['content-type'] = 'application/x-www-form-urlencoded';
+          opts.body = new URLSearchParams(body).toString();
+        } else {
+          opts.headers['content-type'] = 'application/json';
+          opts.body = JSON.stringify(body);
+        }
       }
     }
 

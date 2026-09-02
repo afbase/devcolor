@@ -67,17 +67,18 @@ Poke at my money below. Stack coupons until the order is free. Refund an invoice
         id: 'checkout-stack',
         title: 'Stack coupons toward a free order',
         description: 'The design said "WELCOME10 is 10% off" but never "one coupon per order." The vuln sums every coupon in the array, uncapped and unconsumed; the safe side rejects >1 coupon and consumes the coupon atomically so it can’t be reused.',
-        method: 'POST', path: '/checkout', bodyType: 'json',
-        // NOTE: /checkout expects `coupons` as a JSON ARRAY. The shared bench can
-        // only send string body fields, so this action sends ONE coupon; the true
-        // stacking exploit is the curl one-liner in the hint. See the report.
-        body: { priceCents: '{priceCents}', coupons: '{coupon}' },
+        method: 'POST', path: '/checkout',
+        // /checkout expects `coupons` as a JSON ARRAY. The `json:true` input
+        // carries a real array, so the stacking exploit is fully clickable —
+        // edit the list and watch the total collapse on /vuln.
+        rawBody: '{"priceCents": {priceCents}, "coupons": {coupons}}',
         inputs: [
           { name: 'priceCents', label: 'Price (cents)', default: '10000' },
-          { name: 'coupon', label: 'Coupon code', default: 'WELCOME10', options: ['WELCOME10', 'LOYAL25'] },
+          { name: 'coupons', label: 'Coupons (JSON array)', json: true, size: 320,
+            default: '["WELCOME10","LOYAL25","LOYAL25","LOYAL25"]' },
         ],
-        hint: 'Real stacking (array body): curl -sX POST localhost:PORT/vuln/a06/checkout -H "content-type: application/json" -d \'{"priceCents":10000,"coupons":["WELCOME10","LOYAL25","LOYAL25","LOYAL25"]}\' → 85% off. The safe route 400s on >1 coupon.',
-        expect: { vuln: 'sums every coupon in the array (curl) — order trends to free', safe: 'HTTP 400 "at most one coupon per order"; each coupon consumed once' },
+        hint: 'Stack as many as you like on /vuln. The safe route 400s on >1 coupon.',
+        expect: { vuln: 'sums every coupon in the array — order trends to free (try the default: 85% off)', safe: 'HTTP 400 "at most one coupon per order"; each coupon consumed once' },
       },
     ],
   },
