@@ -33,7 +33,7 @@ service** you can only reach through the SSRF bug, **Prometheus**, and
 
 ## Getting started
 
-### Option A — the full stack (recommended): Docker Compose
+### Run the full stack: Docker Compose
 
 You only need Docker Desktop (or Docker Engine + the Compose plugin).
 
@@ -56,20 +56,6 @@ Stop it with `Ctrl-C`, and `docker compose down -v` to remove the volumes.
 > The `internal-api` service has **no published port** — it exists only on the
 > Compose network. That's the point: the only way to reach it is through the
 > app's SSRF vulnerability (lab A01).
-
-### Option B — just the app: Node.js
-
-Node 18+ and `curl`. No database server — it uses SQLite.
-
-```bash
-npm install
-npm rebuild better-sqlite3   # if the native module was built for another Node
-npm run doctor               # checks your environment
-npm start                    # http://localhost:3000
-```
-
-(Grafana/Prometheus and the SSRF target only come up with Docker, but every lab
-still works — SSRF is demonstrated against a loopback service in the tests.)
 
 ### Prove your work
 
