@@ -1,0 +1,90 @@
+# OWASP Top 10:2025 hands-on lab — full stack.
+#
+#   docker compose up --build
+#
+# Then open:
+#   http://localhost:3000   the lab portal (vulnerable app)
+#   http://localhost:3001   Grafana  (admin / admin)  — the A09 dashboards
+#   http://localhost:9090   Prometheus
+#
+# `internal-api` is deliberately NOT published to the host — it exists only on
+# the compose network, so the only way to reach it is through the app's SSRF
+# bug (A01). Everything here is intentionally insecure: run it locally only.
+
+services:
+  lab:
+    build: .
+    container_name: owasp-lab
+    ports:
+      - "3000:3000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3000"
+      LAB_DB: "/data/lab.db"
+      # Links shown on the portal page.
+      GRAFANA_URL: "http://localhost:3001"
+      PROMETHEUS_URL: "http://localhost:9090"
+    volumes:
+      - lab-data:/data
+    depends_on:
+      - internal-api
+    networks:
+      - labnet
+    restart: unless-stopped
+
+  # SSRF target (A01). No `ports:` — unreachable from the host on purpose.
+  internal-api:
+    build: ./internal-api
+    container_name: owasp-internal-api
+    expose:
+      - "8081"
+    networks:
+      labnet:
+        aliases:
+          # Lets the classic metadata URL resolve inside the network for demos.
+          - metadata.internal
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: owasp-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    depends_on:
+      - lab
+    networks:
+      - labnet
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: owasp-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - labnet
+    restart: unless-stopped
+
+networks:
+  labnet:
+    driver: bridge
+
+volumes:
+  lab-data:
+  grafana-data:

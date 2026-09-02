@@ -1,0 +1,31 @@
+{
+  "name": "owasp-top-10-2025-workshop",
+  "version": "2.0.0",
+  "private": true,
+  "description": "A hands-on lab for the OWASP Top 10:2025 — break it, read it, fix it, prove it. Runs on Docker Compose with SQLite, Prometheus and Grafana.",
+  "type": "commonjs",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node app/server.js",
+    "db:migrate": "node app/db/migrate.js",
+    "db:reset": "node app/db/reset.js",
+    "test": "node --test tests/",
+    "test:a01": "node --test tests/a01.test.js",
+    "test:a02": "node --test tests/a02.test.js",
+    "test:a03": "node --test tests/a03.test.js",
+    "test:a04": "node --test tests/a04.test.js",
+    "test:a05": "node --test tests/a05.test.js",
+    "test:a06": "node --test tests/a06.test.js",
+    "test:a07": "node --test tests/a07.test.js",
+    "test:a08": "node --test tests/a08.test.js",
+    "test:a09": "node --test tests/a09.test.js",
+    "test:a10": "node --test tests/a10.test.js",
+    "doctor": "node scripts/doctor.js",
+    "sbom": "npm sbom --sbom-format cyclonedx > sbom.json && echo 'wrote sbom.json'"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0",
+    "express": "^4.21.1",
+    "prom-client": "^15.1.3"
+  }
+}

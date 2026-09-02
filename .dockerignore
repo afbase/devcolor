@@ -1,0 +1,8 @@
+node_modules
+data
+.git
+.venv
+__pycache__
+sbom.json
+*.log
+docs/*.pptx
