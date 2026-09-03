@@ -1,0 +1,9 @@
+flowchart LR
+  Att["Attacker"] -->|"'preview this link'<br/>http://internal-api/flag"| App["Lab app"]
+  subgraph net["Private network — no public access"]
+    App -->|"the SERVER fetches the URL"| Int["internal-api<br/>secret admin data / cloud keys"]
+  end
+  Int -->|"secret comes back"| App
+  App -->|"...and is handed to the attacker"| Att
+  classDef bad fill:#fdece9,stroke:#b24020,color:#7a2d17;
+  class Int bad;

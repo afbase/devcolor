@@ -1,0 +1,10 @@
+flowchart LR
+  U["You (browser)"] --> F["LinkedIn-style feed<br/>one post per vulnerability"]
+  F --> P["Profile page<br/>= the live target"]
+  P -->|"vulnerable"| A["Lab app"]
+  P -->|"fixed"| A
+  A --> DB[("SQLite<br/>users, invoices, etc.")]
+  A -. "reachable ONLY through<br/>the SSRF bug" .-> I["internal-api<br/>(no public port)"]
+  A --> M["/metrics"] --> PR["Prometheus"] --> G["Grafana<br/>security dashboards"]
+  classDef hidden fill:#fdece9,stroke:#b24020,color:#7a2d17;
+  class I hidden;

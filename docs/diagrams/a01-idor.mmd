@@ -1,0 +1,11 @@
+sequenceDiagram
+  actor Alice
+  participant App as Lab app
+  participant DB as Database
+  Note over Alice,DB: Broken Access Control — IDOR
+  Alice->>App: GET /invoices/1004  (not Alice's)
+  App->>DB: SELECT * FROM invoices WHERE id = 1004
+  Note right of App: never checks "does this belong to Alice?"
+  DB-->>App: Carol's CONFIDENTIAL invoice
+  App-->>Alice: 200 OK — leaks Carol's data
+  Note over Alice,DB: Fix: ...WHERE id = 1004 AND user_id = Alice  -> 404

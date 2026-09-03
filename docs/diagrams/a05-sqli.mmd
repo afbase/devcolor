@@ -1,0 +1,11 @@
+sequenceDiagram
+  actor Attacker
+  participant App as Lab app
+  participant DB as Database
+  Note over Attacker,DB: Injection — the input becomes CODE, not data
+  Attacker->>App: log in with username = admin'--
+  App->>DB: SELECT ... WHERE username='admin'--' AND password='x'
+  Note right of App: everything after -- is a comment,<br/>so the password check disappears
+  DB-->>App: the admin account row
+  App-->>Attacker: logged in as admin (no password!)
+  Note over Attacker,DB: Fix: parameterized query treats admin'-- as a (bad) username

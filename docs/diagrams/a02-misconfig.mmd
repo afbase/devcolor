@@ -1,0 +1,10 @@
+flowchart TB
+  A["Attacker"] --> L["opens /files/  (directory listing left ON)"]
+  L --> B["spots a forgotten .env.backup"]
+  B --> C["downloads it"]
+  C --> K["gets the Stripe key + database password"]
+  H["Same app, hardened config"] --> HH["listing OFF · hidden files ignored ·<br/>errors don't leak details · security headers on"]
+  classDef bad fill:#fdece9,stroke:#b24020,color:#7a2d17;
+  classDef good fill:#e9f5ee,stroke:#057642,color:#0b3d24;
+  class K bad;
+  class HH good;

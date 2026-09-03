@@ -1,0 +1,10 @@
+flowchart TB
+  PJ["package.json<br/>~3 libraries you chose"] --> NM["node_modules<br/>DOZENS of indirect libraries<br/>you never picked"]
+  NM --> C["one of them is quietly compromised"]
+  C --> B["its code runs on your build machine / CI<br/>with full access"]
+  B --> Prod["ships to production"]
+  Fix["Controls"] --> FF["lockfile + npm ci · SBOM inventory ·<br/>npm audit · pin CI actions to a commit"]
+  classDef bad fill:#fdece9,stroke:#b24020,color:#7a2d17;
+  classDef good fill:#e9f5ee,stroke:#057642,color:#0b3d24;
+  class C,B bad;
+  class FF good;
