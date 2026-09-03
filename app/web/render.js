@@ -151,7 +151,8 @@ function renderProfile(lab) {
         <div id="bench"></div>
       </div>
     </div>
-    <div class="col aside">
+    <div class="col aside sticky-rail">
+      <div class="webconsole" id="webconsole"></div>
       <div class="card pad">
         <div class="banner"><b>⚠ Live target.</b> The actions below hit the real vulnerable and fixed endpoints.</div>
       </div>
