@@ -23,6 +23,7 @@ check('database migrates + seeds', () => {
 });
 check('curl available (used in exercises)', () => { execSync('curl --version', { stdio: 'pipe' }); return 'ok'; });
 check('docker available (optional — for the full stack)', () => { execSync('docker --version', { stdio: 'pipe' }); return 'ok'; });
+check('mkcert available (optional — for trusted https://localhost)', () => { execSync('mkcert -version', { stdio: 'pipe' }); return 'ok — run `npm run tls:setup`'; });
 
 console.log(ok
   ? '\nAll good.\n  Local:  npm start        → http://localhost:3000\n  Full:   docker compose up → portal :3000, Grafana :3001, Prometheus :9090\n'

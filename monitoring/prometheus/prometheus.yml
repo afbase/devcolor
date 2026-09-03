@@ -7,6 +7,12 @@ rule_files:
 
 scrape_configs:
   - job_name: 'owasp-lab'
+    # The lab serves HTTPS. Its cert is for localhost (mkcert) or self-signed,
+    # while we scrape it by its service name 'lab', so skip verification — this
+    # is a local lab, not production.
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     metrics_path: /metrics
     static_configs:
       - targets: ['lab:3000']

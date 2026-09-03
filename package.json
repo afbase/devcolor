@@ -4,7 +4,9 @@
   "private": true,
   "description": "A hands-on lab for the OWASP Top 10:2025 — break it, read it, fix it, prove it. Runs on Docker Compose with SQLite, Prometheus and Grafana.",
   "type": "commonjs",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node app/server.js",
     "db:migrate": "node app/db/migrate.js",
@@ -21,7 +23,8 @@
     "test:a09": "node --test tests/a09.test.js",
     "test:a10": "node --test tests/a10.test.js",
     "doctor": "node scripts/doctor.js",
-    "sbom": "npm sbom --sbom-format cyclonedx > sbom.json && echo 'wrote sbom.json'"
+    "sbom": "npm sbom --sbom-format cyclonedx > sbom.json && echo 'wrote sbom.json'",
+    "tls:setup": "bash scripts/setup-tls.sh"
   },
   "dependencies": {
     "better-sqlite3": "^11.5.0",

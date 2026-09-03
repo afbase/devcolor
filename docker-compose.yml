@@ -21,11 +21,15 @@ services:
       HOST: "0.0.0.0"
       PORT: "3000"
       LAB_DB: "/data/lab.db"
+      # mkcert cert if you ran `npm run tls:setup`; self-signed fallback otherwise.
+      TLS_CERT: "/certs/localhost.pem"
+      TLS_KEY: "/certs/localhost-key.pem"
       # Links shown on the portal page.
       GRAFANA_URL: "http://localhost:3001"
       PROMETHEUS_URL: "http://localhost:9090"
     volumes:
       - lab-data:/data
+      - ./certs:/certs:ro
     depends_on:
       - internal-api
     networks:

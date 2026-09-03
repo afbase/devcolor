@@ -15,6 +15,7 @@
  */
 const express = require('express');
 const path = require('node:path');
+const fs = require('node:fs');
 const { register, httpMetricsMiddleware } = require('./metrics');
 const { renderFeed, renderProfile } = require('./web/render');
 const labs = require('./web/labs');
@@ -84,11 +85,33 @@ function createApp() {
   return app;
 }
 
+// Serve HTTPS when a cert/key pair is available (mkcert on the host, or the
+// self-signed fallback the Docker entrypoint generates). Falls back to HTTP so
+// a bare `node app/server.js` still works with no setup. HTTPS is what makes
+// the Secure-cookie (A02) and HSTS demos behave the way a real site does.
+function tlsCredentials() {
+  const cert = process.env.TLS_CERT || path.join(__dirname, '..', 'certs', 'localhost.pem');
+  const key = process.env.TLS_KEY || path.join(__dirname, '..', 'certs', 'localhost-key.pem');
+  if (fs.existsSync(cert) && fs.existsSync(key)) {
+    try { return { cert: fs.readFileSync(cert), key: fs.readFileSync(key) }; }
+    catch { return null; }
+  }
+  return null;
+}
+
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;
   const host = process.env.HOST || '127.0.0.1';
-  createApp().listen(port, host, () => {
-    console.log(`\n  OWASP Top 10:2025 lab → http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
+  const app = createApp();
+  const creds = tlsCredentials();
+  const scheme = creds ? 'https' : 'http';
+  const server = creds ? require('node:https').createServer(creds, app) : app;
+  server.listen(port, host, () => {
+    const shown = host === '0.0.0.0' ? 'localhost' : host;
+    console.log(`\n  OWASP Top 10:2025 lab → ${scheme}://${shown}:${port}`);
+    if (scheme === 'http') {
+      console.log('  (plain HTTP — run `npm run tls:setup` for a trusted https://localhost)');
+    }
     console.log('  Deliberately vulnerable. Metrics at /metrics.\n');
   });
 }

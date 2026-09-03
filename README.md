@@ -40,18 +40,31 @@ You only need Docker Desktop (or Docker Engine + the Compose plugin).
 ```bash
 git clone https://github.com/afbase/devcolor.git
 cd devcolor
-docker compose up --build        # first build takes a couple of minutes
+
+# (recommended) trust a real localhost HTTPS cert — one time:
+brew install mkcert nss    # macOS; see mkcert docs for Linux/Windows
+npm run tls:setup          # runs mkcert -install + issues certs/localhost.pem
+
+docker compose up --build  # first build takes a couple of minutes
 ```
 
 Then open:
 
 | URL | What |
 |-----|------|
-| <http://localhost:3000> | **The feed** — one post per lab; click through to each interactive profile |
+| <https://localhost:3000> | **The feed** — one post per lab; click through to each interactive profile |
 | <http://localhost:3001> | **Grafana** (login `admin` / `admin`) — the A09 security dashboards |
 | <http://localhost:9090> | **Prometheus** — raw metrics and alert rules |
 
 Stop it with `Ctrl-C`, and `docker compose down -v` to remove the volumes.
+
+> **HTTPS / mkcert.** The lab runs over TLS so the `Secure` cookie flag and HSTS
+> (lab A02) behave like a real site. `npm run tls:setup` uses
+> [mkcert](https://github.com/FiloSottile/mkcert) — a *locally-trusted* CA, not
+> Let's Encrypt (which can't issue for `localhost`) — so the browser trusts
+> `https://localhost:3000` with no warning. **Skip it and it still works:** the
+> container generates a self-signed cert, you just click through the browser
+> warning (and `curl -k`).
 
 > The `internal-api` service has **no published port** — it exists only on the
 > Compose network. That's the point: the only way to reach it is through the

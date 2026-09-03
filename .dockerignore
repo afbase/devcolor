@@ -6,3 +6,4 @@ __pycache__
 sbom.json
 *.log
 docs/*.pptx
+certs

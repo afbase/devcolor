@@ -9,3 +9,4 @@ app/public-files/
 __pycache__/
 *.log
 .DS_Store
+certs/*.pem
