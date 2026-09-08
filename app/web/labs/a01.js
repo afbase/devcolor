@@ -44,6 +44,21 @@ Try my portal below. Read an invoice that isn't yours. Walk into the admin list.
           { name: 'who', label: 'Act as', default: 'alice', options: ['alice', 'bob', 'carol', 'admin', 'dana'] },
         ],
         hint: '1004 is Carol’s confidential invoice.',
+        code: {
+          lang: 'js',
+          intro: 'IDOR: the record is fetched by a user-controlled id with no ownership check.',
+          vuln: `// /vuln/a01/invoices/:id — the id from the URL is trusted completely
+const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?')
+  .get(req.params.id);
+// Missing "...AND user_id = ?". That single omission is the whole bug.
+res.json({ viewer: user.username, invoice });`,
+          safe: `// /safe/a01/invoices/:id — ownership is enforced in the query itself
+const invoice = db.prepare('SELECT * FROM invoices WHERE id = ? AND user_id = ?')
+  .get(req.params.id, req.user.id);
+// 404, not 403: a 403 confirms the record exists and leaks the id space.
+if (!invoice) return res.status(404).json({ error: 'no such invoice' });
+res.json({ viewer: req.user.username, invoice });`,
+        },
         expect: { vuln: 'hands you Carol’s SEVERANCE invoice', safe: '404 — you only see your own' },
       },
       {
@@ -52,6 +67,21 @@ Try my portal below. Read an invoice that isn't yours. Walk into the admin list.
         description: 'A page that simply isn’t linked in the UI. Obscurity is not access control.',
         method: 'GET', path: '/admin/users', query: { as: '{who}' },
         inputs: [{ name: 'who', label: 'Act as', default: 'bob', options: ['bob', 'alice', 'admin'] }],
+        code: {
+          lang: 'js',
+          intro: 'Forced browsing: the endpoint enforces nothing; being unlinked is not access control.',
+          vuln: `// /vuln/a01/admin/users — the page just isn't linked. That's the only "lock".
+vuln.get('/admin/users', (req, res) => {
+  res.json({ users: db.prepare('SELECT id, username, email, role FROM users').all() });
+});`,
+          safe: `// deny-by-default middleware + one reusable, declarative role check
+const requireRole = (role) => (req, res, next) =>
+  req.user.role === role ? next() : res.status(403).json({ error: 'forbidden' });
+
+safe.get('/admin/users', requireRole('admin'), (req, res) => {
+  res.json({ users: db.prepare('SELECT id, username, email, role FROM users').all() });
+});`,
+        },
         expect: { vuln: 'lists every user for anyone', safe: '403 unless you are an admin' },
       },
       {
@@ -60,6 +90,18 @@ Try my portal below. Read an invoice that isn't yours. Walk into the admin list.
         description: 'The delete button is hidden for non-admins in the UI. curl doesn’t care about hidden buttons.',
         method: 'POST', path: '/invoices/purge', query: { as: '{who}' },
         inputs: [{ name: 'who', label: 'Act as', default: 'bob', options: ['bob', 'alice', 'admin'] }],
+        code: {
+          lang: 'js',
+          intro: 'Client-side-only control: the authorization lives in the UI, not the handler.',
+          vuln: `// /vuln/a01/invoices/purge — the UI hides the button; the endpoint never checks the role
+vuln.post('/invoices/purge', (req, res) => {
+  res.json({ ok: true, wouldHaveDeleted: db.prepare('SELECT COUNT(*) c FROM invoices').get().c });
+});`,
+          safe: `// the server enforces the role, whatever the UI shows
+safe.post('/invoices/purge', requireRole('admin'), (req, res) => {
+  res.json({ ok: true, wouldHaveDeleted: db.prepare('SELECT COUNT(*) c FROM invoices').get().c });
+});`,
+        },
         expect: { vuln: 'runs for anyone', safe: '403 unless admin' },
       },
       {
@@ -72,6 +114,28 @@ Try my portal below. Read an invoice that isn't yours. Walk into the admin list.
           { name: 'who', label: 'Act as', default: 'alice', options: ['alice', 'admin'] },
         ],
         hint: 'Also try http://169.254.169.254/latest/meta-data/iam/security-credentials/lab-role',
+        code: {
+          lang: 'js',
+          intro: 'SSRF (CWE-918): the server makes a request to a user-supplied URL with no allow-list.',
+          vuln: `// /vuln/a01/unfurl — the server fetches whatever URL you pass, from inside the network
+vuln.all('/unfurl', express.json(), async (req, res) => {
+  const target = req.query.url || (req.body && req.body.url);
+  const out = await fetchUrl(target);          // no validation at all
+  res.json({ fetched: target, ...out });
+});`,
+          safe: `// validate first: http/https only, and reject hosts that resolve to
+// private/loopback/link-local/metadata addresses (resolving beats DNS rebinding)
+safe.all('/unfurl', express.json(), async (req, res) => {
+  const target = req.query.url || (req.body && req.body.url);
+  try {
+    const out = await fetchUrl(target, { guard: assertPublicUrl });
+    res.json({ fetched: target, ...out });
+  } catch (err) {
+    res.status(400).json({ error: \`refused to fetch: \${err.message}\` });
+  }
+});`,
+          note: 'The guard lives in app/lib/ssrf-guard.js: it resolves the hostname and blocks private / loopback / link-local / cloud-metadata ranges.',
+        },
         expect: { vuln: 'fetches the internal-only service (in Docker)', safe: 'refuses private/loopback/metadata targets' },
       },
     ],

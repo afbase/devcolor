@@ -156,6 +156,28 @@ button{font:inherit;cursor:pointer}
 .codewrap .copy:hover{filter:brightness(1.08)}
 .curlnote{font-size:12px;color:#9fb0c8;padding:0 4px 4px}
 
+/* ---- code sample: the vulnerable source + the fix, per action ---- */
+.action details.codesample{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:#fbfcfe}
+.action details.codesample>summary{cursor:pointer;font-size:13px;font-weight:800;color:var(--blue-d);
+  list-style:none;user-select:none;padding:10px 14px;display:flex;align-items:center;gap:8px}
+.action details.codesample>summary::-webkit-details-marker{display:none}
+.action details.codesample>summary::before{content:"▸";color:var(--faint);font-weight:700}
+.action details.codesample[open]>summary::before{content:"▾"}
+.action details.codesample[open]>summary{border-bottom:1px solid var(--line)}
+.cs-in{padding:12px;display:flex;flex-direction:column;gap:12px}
+.cs-intro{font-size:13px;color:#2b2f36;border-left:3px solid var(--blue);padding-left:10px}
+.cs-block{border:1px solid #1c2740;border-radius:8px;overflow:hidden}
+.cs-head{font-size:12px;font-weight:800;letter-spacing:.04em;padding:6px 12px;color:#fff;display:flex;align-items:center}
+.cs-head.vuln{background:var(--red)}.cs-head.safe{background:var(--green)}
+.cs-head .cs-lang{margin-left:auto;font-size:10px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.1em}
+.cs-wrap{position:relative;background:#0d1117}
+.cs-wrap pre{margin:0;padding:12px 14px;overflow:auto;max-height:360px}
+.cs-wrap code{color:#e6eefb;font:12.5px/1.6 ui-monospace,Menlo,Consolas,monospace;white-space:pre;display:block}
+.cs-wrap .copy{position:absolute;top:8px;right:8px;background:#243044;color:#cdd8ea;border:0;
+  border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800}
+.cs-wrap .copy:hover{background:#2e3c55}
+.cs-note{font-size:12px;color:var(--muted)}
+
 /* ---- SECONDARY: click-to-run, demoted into a small accordion ---- */
 .action details.clicky{margin-top:10px}
 .action details.clicky>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted);

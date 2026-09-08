@@ -1,5 +1,5 @@
 # The lab application (Express + SQLite + Prometheus metrics).
-FROM node:20-bookworm-slim
+FROM node:24-bookworm-slim
 
 # Build tools so better-sqlite3 can compile if a prebuilt binary isn't available
 # for this platform (removed after install). openssl stays — the entrypoint uses

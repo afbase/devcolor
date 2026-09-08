@@ -44,6 +44,26 @@ Call my bluff on the bench below. Ask /inventory how many packages I *wrote down
         description: 'Scans the live node_modules. Compare directDependencies (what you wrote down) with packagesActuallyInstalled (what npm fetched), and see how many run code at install time.',
         method: 'GET', path: '/inventory',
         hint: 'Both sides return the same tree — that is the point. transitiveMultiplier is your real trust boundary.',
+        code: {
+          lang: 'js',
+          intro: 'The risk isn\'t one line of code — it\'s how many packages (and install scripts) you actually trust. This is the measurement, served identically on both sides.',
+          vulnLabel: '🔎 What actually landed in node_modules',
+          vuln: `// walk node_modules; count what's really on disk and flag install-time scripts
+function scanNodeModules() {
+  let installed = 0;
+  const runsCodeAtInstall = [];
+  for (const name of fs.readdirSync(NODE_MODULES)) {
+    installed += 1;
+    const p = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
+    const s = p.scripts || {};
+    // preinstall/install/postinstall run code the MOMENT you npm install
+    if (s.preinstall || s.install || s.postinstall) runsCodeAtInstall.push(name);
+  }
+  return { installed, runsCodeAtInstall };
+}
+// directDependencies (what you wrote down) vs packagesActuallyInstalled (what npm fetched)`,
+          note: 'You audited a handful of names; your real trust boundary is every package on disk, and every one of them that runs code at install time.',
+        },
         expect: {
           vuln: 'directDependencies is small; packagesActuallyInstalled is much larger, with N packages running lifecycle scripts',
           safe: 'identical numbers — the facts of the tree don\'t change with route',
@@ -55,6 +75,24 @@ Call my bluff on the bench below. Ask /inventory how many packages I *wrote down
         description: 'How the same tree gets resolved. The vuln posture uses caret ranges + `npm install` (non-reproducible). The safe posture pins to the lockfile with integrity hashes.',
         method: 'GET', path: '/resolution',
         hint: 'vuln: respectsLockfile:false, example resolves to "whatever is newest". safe: `npm ci --ignore-scripts`, every direct dep pinned + integrity-checked.',
+        code: {
+          lang: 'js',
+          intro: 'Same dependency tree, two install postures. Reproducibility is the security property.',
+          vuln: `// insecure posture: caret ranges + \`npm install\` on every build
+vuln.get('/resolution', (req, res) => res.json({
+  installCommand: 'npm install',
+  respectsLockfile: false,
+  example: { declared: 'express: "^4.21.1"',
+             mayResolveTo: '4.21.1 … 4.99.99, whatever is newest at build time' },
+}));
+// a caret range + \`npm install\` lets a freshly published/compromised version in silently`,
+          safe: `// secure posture: install the EXACT locked versions, verify integrity, no install scripts
+safe.get('/resolution', (req, res) => res.json({
+  installCommand: 'npm ci --ignore-scripts',
+  respectsLockfile: true,
+  // each direct dep pinned to an exact version + integrity hash; a mismatch fails the build
+}));`,
+        },
         expect: {
           vuln: '"npm install", respectsLockfile:false — a caret range lets a freshly published/compromised version in silently',
           safe: '"npm ci --ignore-scripts", every direct dependency pinned to an exact version + integrity hash',

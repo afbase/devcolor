@@ -44,6 +44,26 @@ Play with my services below. Sneak a dangerous key past my deep-merge, or ship m
           { name: 'theme', label: 'theme', default: 'dark', in: 'body' },
           { name: 'pageSize', label: 'pageSize', default: '50', in: 'body' },
         ],
+        code: {
+          lang: 'js',
+          intro: 'The baseline. Both sides accept known keys — but look at HOW each one merges input.',
+          vuln: `// unsafe deep-merge: walks every key and recurses on objects, with bracket access on the target
+function unsafeMerge(target, source) {
+  for (const key in source) {
+    const value = source[key];
+    if (value && typeof value === 'object') {
+      if (typeof target[key] !== 'object' || target[key] === null) target[key] = {};
+      unsafeMerge(target[key], value);   // for key "__proto__", target[key] IS Object.prototype
+    } else target[key] = value;
+  }
+  return target;
+}`,
+          safe: `// allow-list onto a null-prototype object → there is no prototype to pollute
+const prefs = Object.assign(Object.create(null), PREFERENCE_DEFAULTS);
+for (const key of Object.keys(input)) {
+  if (ALLOWED_PREFS.has(key)) prefs[key] = input[key];   // unknown keys never make it in
+}`,
+        },
         expect: {
           vuln: 'merges your prefs; bystander object is (for now) clean',
           safe: 'copies only allow-listed keys onto a null-prototype object',
@@ -62,6 +82,20 @@ Play with my services below. Sneak a dangerous key past my deep-merge, or ship m
           { name: 'theme', label: 'theme (legit key)', default: 'dark' },
         ],
         hint: 'Watch pollutedBystanderObject — that object was never in the merge.',
+        code: {
+          lang: 'js',
+          intro: 'Prototype pollution: a nested __proto__ key walks into Object.prototype and poisons every object.',
+          vuln: `// POST {"__proto__":{"isAdmin":true}} → unsafeMerge writes onto Object.prototype
+const merged = unsafeMerge({ ...PREFERENCE_DEFAULTS }, req.body || {});
+// a brand-new object that NEVER touched the request now inherits the attacker's keys:
+const bystander = {};
+bystander.isAdmin;   // → true`,
+          safe: `// refuse the dangerous keys outright (clearer than silently dropping; shows up in logs)
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+for (const key of Object.keys(input))
+  if (FORBIDDEN_KEYS.has(key))
+    return res.status(400).json({ error: \`refused dangerous key: \${key}\` });`,
+        },
         expect: {
           vuln: 'pollutedBystanderObject.isAdmin becomes true (200)',
           safe: '400 — refused dangerous key; bystander stays clean',
@@ -76,6 +110,19 @@ Play with my services below. Sneak a dangerous key past my deep-merge, or ship m
           { name: 'name', label: 'update name', default: 'billing-plugin@evil', in: 'body' },
           { name: 'payload', label: 'payload', default: 'rm -rf / # totally legit patch', in: 'body', size: 360 },
         ],
+        code: {
+          lang: 'js',
+          intro: 'Integrity failure: applying an update whose origin was never verified (CWE-345).',
+          vuln: `// applies any {name, payload} that arrives — no signature, no checksum, no provenance
+const { name, payload } = req.body || {};
+res.json({ applied: true, name, payload });`,
+          safe: `// require a valid HMAC signature over the payload; constant-time compare
+if (!signature) return res.status(400).json({ error: 'unsigned update rejected' });
+const expected = signPayload(payload);            // HMAC-SHA256 over canonical JSON
+const got = Buffer.from(String(signature)), want = Buffer.from(expected);
+if (got.length !== want.length || !crypto.timingSafeEqual(got, want))
+  return res.status(400).json({ error: 'signature verification failed' });`,
+        },
         expect: {
           vuln: 'applied: true — runs your payload, no provenance',
           safe: '400 — unsigned update rejected',

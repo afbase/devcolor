@@ -42,6 +42,17 @@ Break me below. Knock the authz service offline, then perform an admin action as
         description: 'Simulate the internal permission service timing out. Set it "down" to make the permission check throw; set it "up" to restore. This flips a shared switch for the whole lab — do it on the same side you’ll test.',
         method: 'POST', path: '/authz-service/{state}',
         inputs: [{ name: 'state', label: 'state', default: 'down', options: ['down', 'up'] }],
+        code: {
+          lang: 'js',
+          intro: 'This flips a shared switch that makes the permission check throw — the setup for the next action.',
+          vulnLabel: '⚙️ The flaky permission check (shared by both sides)',
+          vuln: `let authzUp = true;
+function permissionCheck(userId) {
+  if (!authzUp) throw new Error('authz-service: connection refused (ECONNREFUSED)');
+  return Number(userId) === 4;   // only the seeded admin may perform admin actions
+}
+// POST /authz-service/down makes the very next permissionCheck() throw`,
+        },
         expect: {
           vuln: 'authzUp:false — the next admin-action will fail OPEN',
           safe: 'authzUp:false — the next admin-action will fail CLOSED',
@@ -54,6 +65,23 @@ Break me below. Knock the authz service offline, then perform an admin action as
         method: 'POST', path: '/admin-action',
         inputs: [{ name: 'userId', label: 'userId', default: '2', in: 'body', options: ['2', '4'] }],
         hint: 'Toggle authz DOWN first, then run this as userId 2.',
+        code: {
+          lang: 'js',
+          intro: 'Fail-open authorization: an error in the security check is swallowed and treated as "allow".',
+          vuln: `// FAIL OPEN: the catch treats "couldn't check" as "allow" → anyone is admin when authz blips
+try { allowed = permissionCheck(userId); }
+catch (err) { allowed = true; }
+if (!allowed) return res.status(403).json({ error: 'forbidden' });
+res.json({ allowed: true, action: 'performed' });`,
+          safe: `// FAIL CLOSED: if we can't confirm you're allowed, the answer is "no"
+// 503, because this is our outage, not the caller's fault — they can retry
+try { allowed = permissionCheck(userId); }
+catch (err) {
+  console.warn(JSON.stringify({ event: 'authz.unavailable', reason: err.message }));
+  return res.status(503).json({ error: 'authorization service unavailable' });
+}
+if (!allowed) return res.status(403).json({ error: 'forbidden' });`,
+        },
         expect: {
           vuln: 'service down → allowed:true (fail open); anyone is admin',
           safe: 'service down → 503 (fail closed); up + non-admin → 403',
@@ -66,6 +94,22 @@ Break me below. Knock the authz service offline, then perform an admin action as
         method: 'GET', path: '/report',
         inputs: [{ name: 'table', label: 'table', default: 'sqlite_master', in: 'query', options: ['sqlite_master', 'nope', 'invoices', 'accounts'] }],
         hint: 'Try "sqlite_master" or "nope" to trigger the error path; "invoices"/"accounts" are the allow-listed tables.',
+        code: {
+          lang: 'js',
+          intro: 'Stack-trace leakage (CWE-209): an exception becomes schema / paths / versions for the attacker.',
+          vuln: `// on any error, hand the client err.message AND err.stack — a reconnaissance gift
+try {
+  const rows = db.prepare(\`SELECT * FROM \${table}\`).all();   // identifier interpolation, too
+  res.json({ rows });
+} catch (err) {
+  res.status(500).json({ error: err.message, stack: err.stack });
+}`,
+          safe: `// allow-list the table; on error return an opaque reference and log the detail server-side
+const REPORTABLE_TABLES = new Set(['invoices', 'accounts']);
+if (!REPORTABLE_TABLES.has(table))
+  return res.status(400).json({ error: 'unknown report', reference: crypto.randomUUID() });
+// ... on a genuine error: log { reference, detail } server-side, return only { error, reference }`,
+        },
         expect: {
           vuln: 'dumps rows for any table, or a full stack trace on error',
           safe: '400 opaque {error, reference} for anything off the allow-list',
@@ -82,6 +126,22 @@ Break me below. Knock the authz service offline, then perform an admin action as
           { name: 'amountCents', label: 'amountCents', default: '5000', in: 'body' },
           { name: 'failMidway', label: 'failMidway', default: '1', options: ['1', '0'] },
         ],
+        code: {
+          lang: 'js',
+          intro: 'Non-atomic writes: a multi-step operation that throws halfway leaves money half-moved.',
+          vuln: `// two writes, NO transaction: debit first, then die — the money simply vanishes
+db.prepare('UPDATE accounts SET balance_cents = balance_cents - ? WHERE user_id = ?').run(amount, fromUserId);
+if (failMidway) return res.status(500).json({ error: 'downstream failure after debit' });
+db.prepare('UPDATE accounts SET balance_cents = balance_cents + ? WHERE user_id = ?').run(amount, toUserId);`,
+          safe: `// ONE transaction: any throw rolls back every write inside it, so balances are conserved
+const doTransfer = db.transaction(() => {
+  db.prepare('UPDATE accounts SET balance_cents = balance_cents - ? WHERE user_id = ?').run(amount, fromUserId);
+  if (failMidway) throw new Error('downstream failure after debit');   // unwinds the debit too
+  db.prepare('UPDATE accounts SET balance_cents = balance_cents + ? WHERE user_id = ?').run(amount, toUserId);
+});
+try { doTransfer(); res.json({ ok: true }); }
+catch (err) { res.status(409).json({ error: 'transfer failed and was rolled back' }); }`,
+        },
         expect: {
           vuln: '500, and the debited amount vanishes — system total drops',
           safe: '409 rolled back — every balance and the total are conserved',
@@ -92,6 +152,16 @@ Break me below. Knock the authz service offline, then perform an admin action as
         title: 'Check balances (system total)',
         description: 'Ground truth: every account balance and the system total. Run it before and after a failed transfer — in a correct system the total is CONSERVED no matter what.',
         method: 'GET', path: '/balances',
+        code: {
+          lang: 'js',
+          intro: 'Not a vuln itself — the yardstick. The system total should never change just because a transfer failed.',
+          vulnLabel: '📊 Ground truth — the invariant to watch',
+          vuln: `// every account balance + the system total. In a correct system the total is
+// CONSERVED across any transfer — run this before and after a failed transfer.
+const accounts = db.prepare('SELECT user_id, balance_cents FROM accounts ORDER BY user_id').all();
+const total = accounts.reduce((sum, a) => sum + a.balance_cents, 0);
+res.json({ accounts, total });`,
+        },
         expect: {
           vuln: 'total shrinks after a failed transfer (money lost)',
           safe: 'total unchanged — the rollback preserved the invariant',

@@ -79,6 +79,11 @@
     renderCurl(a, inputs, curlBody);
     if (a.hint) card.appendChild(el('div', 'termhint', '💡 ' + a.hint));
 
+    // The code behind the action: the actual vulnerable snippet and its fix, so
+    // the lesson goes past "run this curl" into "here is WHY it breaks". Folded
+    // into a details so the try-it flow stays uncluttered.
+    if (a.code) card.appendChild(buildCodeSample(a));
+
     // SECONDARY, tucked away: the same requests as one-click buttons.
     var out = el('div', 'out');
     var det = el('details', 'clicky');
@@ -210,6 +215,41 @@
     if (a.render === 'iframe') {
       container.appendChild(el('div', 'curlnote', 'This action renders HTML — in a terminal the curl shows the raw response; in the page it runs live in a frame.'));
     }
+  }
+
+  // Render the vulnerable/fixed source snippets for an action. `a.code` is
+  // { lang, intro, vuln, safe, vulnLabel, safeLabel, note } — vuln/safe are
+  // source strings; either may be omitted (e.g. a safe-only endpoint). Each
+  // snippet gets its own Copy button, mirroring the curl blocks above.
+  function buildCodeSample(a) {
+    var c = a.code;
+    var lang = c.lang || 'js';
+    var det = el('details', 'codesample');
+    det.appendChild(el('summary', null, '📄 The code behind it — the vulnerability, and the fix'));
+    var inner = el('div', 'cs-in');
+    if (c.intro) inner.appendChild(el('div', 'cs-intro', c.intro));
+    [['vuln', c.vuln, c.vulnLabel], ['safe', c.safe, c.safeLabel]].forEach(function (row) {
+      var sideName = row[0], src = row[1], label = row[2];
+      if (src == null) return;
+      var block = el('div', 'cs-block');
+      var head = el('div', 'cs-head ' + sideName,
+        label || (sideName === 'vuln' ? '🔓 Vulnerable' : '🔒 Fixed'));
+      head.appendChild(el('span', 'cs-lang', lang));
+      block.appendChild(head);
+      var wrap = el('div', 'cs-wrap');
+      var pre = el('pre'); pre.appendChild(el('code', null, src));
+      wrap.appendChild(pre);
+      var copy = el('button', 'copy', 'Copy');
+      copy.onclick = (function (text, btn) {
+        return function () { copyText(text, btn); };
+      })(src, copy);
+      wrap.appendChild(copy);
+      block.appendChild(wrap);
+      inner.appendChild(block);
+    });
+    if (c.note) inner.appendChild(el('div', 'cs-note', c.note));
+    det.appendChild(inner);
+    return det;
   }
 
   function run(a, s, inputEls, out) {

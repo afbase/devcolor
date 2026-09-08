@@ -47,6 +47,18 @@ Play with my portal below. Log in as admin without the password. Make the invoic
           { name: 'password', label: 'Password', default: 'anything', in: 'body' },
         ],
         hint: "Try `' OR '1'='1` too. On /safe the payload is just a username that doesn't exist.",
+        code: {
+          lang: 'js',
+          intro: 'SQL injection: string-concatenated input becomes part of the query grammar.',
+          vuln: `// username + password concatenated straight into the query text
+const sql = \`SELECT * FROM users WHERE username='\${u}' AND password_md5='\${md5(p)}'\`;
+const user = db.prepare(sql).get();
+// admin'--  closes the string and comments out the password check`,
+          safe: `// bound parameters keep input in the DATA channel; the driver never re-parses it as SQL
+const user = db.prepare('SELECT * FROM users WHERE username = ? AND password_md5 = ?')
+  .get(u, md5(p));
+// admin'--  is now just a username that doesn't exist`,
+        },
         expect: { vuln: 'logs you in as admin, no password needed', safe: 'loggedIn:false — bound params, payload is inert text' },
       },
       {
@@ -59,6 +71,17 @@ Play with my portal below. Log in as admin without the password. Make the invoic
           { name: 'q', label: 'Search term', default: "%' UNION SELECT id, username, 0, password_md5 FROM users--", size: 460 },
         ],
         hint: 'The safe side binds the whole thing as one LIKE literal, so it matches nothing.',
+        code: {
+          lang: 'js',
+          intro: 'UNION-based exfiltration: unparameterized input can append a query that reads another table.',
+          vuln: `// the term is spliced into a LIKE clause → a UNION SELECT grafts on another table
+const sql = \`SELECT id, memo, amount_cents, user_id FROM invoices WHERE memo LIKE '%\${q}%'\`;
+const rows = db.prepare(sql).all();
+// %' UNION SELECT id, username, 0, password_md5 FROM users--  leaks creds via memo`,
+          safe: `// the whole term is bound as one LIKE literal — a UNION payload is matched as text
+const rows = db.prepare('SELECT id, user_id, amount_cents, memo FROM invoices WHERE memo LIKE ?')
+  .all(\`%\${q}%\`);`,
+        },
         expect: { vuln: 'returns rows from the users table (creds leak via memo)', safe: 'rows: [] — the UNION is matched as text' },
       },
       {
@@ -71,6 +94,18 @@ Play with my portal below. Log in as admin without the password. Make the invoic
           { name: 'host', label: 'Host to ping', default: 'localhost;echo INJECTED', size: 320 },
         ],
         hint: 'Try `localhost;id` or `localhost;cat /etc/hostname`. Safe uses execFile + a hostname allow-list.',
+        code: {
+          lang: 'js',
+          intro: 'OS command injection: building a shell string lets `;` start a second command.',
+          vuln: `// host interpolated into a shell string → exec() spawns /bin/sh -c, so \`;\` chains a command
+exec(\`ping -c 1 \${host}\`, { timeout: 3000 }, (err, stdout, stderr) => {
+  res.type('text/plain').send(\`\${stdout || ''}\${stderr || ''}\${err ? err.message : ''}\`);
+});`,
+          safe: `// no shell: execFile passes argv directly to the binary. Plus a positive allow-list.
+const HOSTNAME = /^[a-zA-Z0-9.-]+$/;
+if (!HOSTNAME.test(host)) return res.status(400).type('text/plain').send('invalid hostname');
+execFile('ping', ['-c', '1', host], { timeout: 3000 }, (err, stdout, stderr) => { /* ... */ });`,
+        },
         expect: { vuln: 'runs the injected echo — INJECTED appears in the output', safe: 'HTTP 400 invalid hostname — no shell, no chaining' },
       },
       {
@@ -83,6 +118,16 @@ Play with my portal below. Log in as admin without the password. Make the invoic
           { name: 'q', label: 'Reflected value', default: '<script>alert(\'reflected-xss\')</script>', size: 420 },
         ],
         hint: 'On /vuln the alert fires inside the iframe; on /safe the tag is HTML-encoded and shown as text.',
+        code: {
+          lang: 'js',
+          intro: 'Reflected XSS: user input echoed into HTML without output encoding.',
+          vuln: `// the query value is written into the HTML response with no encoding
+res.type('html').send(\`<!doctype html><body><p>You searched for: \${q}</p></body>\`);
+// ?q=<script>alert(1)</script>  executes in the victim's page`,
+          safe: `// encode for the HTML text-node context before writing (+ a CSP as defence-in-depth)
+withCsp(res).type('html')
+  .send(\`<!doctype html><body><p>You searched for: \${escapeHtml(q)}</p></body>\`);`,
+        },
         expect: { vuln: 'the injected <script> runs live in the iframe', safe: 'the markup is encoded and rendered as inert text' },
       },
       {
@@ -95,6 +140,16 @@ Play with my portal below. Log in as admin without the password. Make the invoic
           { name: 'body', label: 'Comment', default: '<script>alert(\'stored-xss\')</script>', size: 420, in: 'body' },
         ],
         hint: 'Plant it, then run the "view" action below to see it fire for every viewer.',
+        code: {
+          lang: 'js',
+          intro: 'Stored XSS is planted here; whether it fires is decided when the entry is rendered.',
+          vuln: `// stored raw — the payload persists and will run for every later viewer
+db.prepare('INSERT INTO guestbook (author, body) VALUES (?, ?)').run(author, body);
+res.json({ ok: true });`,
+          safe: `// the SAFE side ALSO stores raw — storing raw is fine; the fix is to encode on OUTPUT
+db.prepare('INSERT INTO guestbook (author, body) VALUES (?, ?)').run(author, body);
+res.json({ ok: true });   // see "view the guestbook" for where the encoding happens`,
+        },
         expect: { vuln: 'stored raw — {ok:true}, ready to execute on view', safe: 'also stored raw — but encoded on OUTPUT when viewed' },
       },
       {
@@ -104,6 +159,16 @@ Play with my portal below. Log in as admin without the password. Make the invoic
         method: 'GET', path: '/guestbook', render: 'iframe',
         inputs: [],
         hint: 'Plant the payload first, then run this on /vuln, then on /safe to see the same data encoded.',
+        code: {
+          lang: 'js',
+          intro: 'Stored XSS fires on output: encode when you render, not (only) when you store.',
+          vuln: `// renders every stored entry RAW → the planted <script> executes for whoever opens it
+const rows = db.prepare('SELECT author, body FROM guestbook ORDER BY id').all();
+res.type('html').send(renderGuestbook(rows, { encode: false }));   // raw — the bug`,
+          safe: `// same data, encoded on output → the markup renders as inert text
+withCsp(res).type('html').send(renderGuestbook(rows, { encode: true }));   // encoded — the fix
+// renderGuestbook runs each field through escapeHtml when encode:true`,
+        },
         expect: { vuln: 'the stored <script> executes for every viewer', safe: 'the same entries render HTML-encoded, inert' },
       },
     ],

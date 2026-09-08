@@ -47,6 +47,22 @@ Log in as admin/admin. Change just the username and watch the error message tatt
           { name: 'password', label: 'Password', default: 'admin', in: 'body' },
         ],
         hint: 'Oracle test: keep password "x" and switch username between "alice" (real) and "nope" (fake). Vuln says "Incorrect password" vs "No such user"; safe says the same thing for both.',
+        code: {
+          lang: 'js',
+          intro: 'Auth failures are everything AROUND the password check: oracles, defaults, no throttle.',
+          vuln: `// distinct errors = a username oracle; default admin/admin honoured; no throttling
+const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+if (!user) return res.status(401).json({ error: 'No such user' });         // oracle
+if (user.password_md5 !== md5(password || ''))
+  return res.status(401).json({ error: 'Incorrect password' });            // oracle`,
+          safe: `// lockout BEFORE any password work; ONE generic error; breached passwords refused
+if ((failures.get(username) || 0) >= LOCKOUT_THRESHOLD)
+  return res.status(429).json({ error: 'Account temporarily locked. Try again later.' });
+const ok = user && scryptVerify(password || '', user.password_scrypt);
+if (!ok) { failures.set(username, fails + 1); return res.status(401).json({ error: GENERIC_ERROR }); }
+if (BREACHED.has(password))                                    // this is what stops admin/admin
+  return res.status(403).json({ error: 'This password appeared in a breach. You must reset it.' });`,
+        },
         expect: { vuln: 'admin/admin logs in; errors reveal whether a user exists', safe: 'admin/admin → 403 breached; every failure → one generic error' },
       },
       {
@@ -61,6 +77,19 @@ Log in as admin/admin. Change just the username and watch the error message tatt
           { name: 'sid', label: 'Planted session id', default: 'attacker-fixed-session-123', size: 260 },
         ],
         hint: 'Dana’s password is long and NOT in the breach corpus, so the safe login actually succeeds and you can see it rotate the id. On vuln, the response’s sid equals what you planted.',
+        code: {
+          lang: 'js',
+          intro: 'Session fixation: reusing a pre-login (attacker-known) session id after authentication.',
+          vuln: `// session fixation: an attacker-planted sid is reused as the authenticated session
+const planted = parseCookies(req).sid;
+const sid = planted ? sessions.weak.login(planted, user.id) : sessions.weak.create(user.id);
+res.setHeader('Set-Cookie', \`sid=\${sid}\`);
+res.json({ loggedIn: true, sid, /* ... */ });`,
+          safe: `// mint a brand-new high-entropy id on every login; discard whatever the client presented
+const oldSid = parseCookies(req).sid;
+const sid = sessions.strong.login(oldSid, user.id);   // rotates the id
+res.setHeader('Set-Cookie', \`sid=\${sid}; HttpOnly; Secure; SameSite=Strict; Path=/\`);`,
+        },
         expect: { vuln: 'loggedIn:true and sid = your planted "attacker-fixed-session-123"', safe: 'loggedIn:true with a fresh server-minted id (planted id discarded)' },
       },
       {
@@ -73,6 +102,21 @@ Log in as admin/admin. Change just the username and watch the error message tatt
           { name: 'password', label: 'Password', default: 'password123', size: 220, in: 'body' },
         ],
         hint: 'Try "password123" (breached → safe 400), then a short unique one like "abc" (safe: too short), then a long unique passphrase (safe accepts).',
+        code: {
+          lang: 'js',
+          intro: 'Accepting breached/trivial passwords — a check against a breach corpus is the fix.',
+          vuln: `// accepts ANY password, including breached and trivial ones
+vuln.post('/register', (req, res) => {
+  const { username, password } = req.body;
+  res.json({ registered: true, username, passwordLength: (password || '').length });
+});`,
+          safe: `// reject breached passwords FIRST, then enforce a length floor (length beats composition rules)
+if (BREACHED.has(pw))
+  return res.status(400).json({ error: 'That password has appeared in a breach corpus.' });
+if (pw.length < 12)
+  return res.status(400).json({ error: 'Password must be at least 12 characters.' });
+res.json({ registered: true, username });`,
+        },
         expect: { vuln: 'registered:true for any password, breached or trivial', safe: 'HTTP 400 — breached corpus / under 12 chars' },
       },
     ],

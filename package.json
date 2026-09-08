@@ -5,7 +5,7 @@
   "description": "A hands-on lab for the OWASP Top 10:2025 — break it, read it, fix it, prove it. Runs on Docker Compose with SQLite, Prometheus and Grafana.",
   "type": "commonjs",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "start": "node app/server.js",

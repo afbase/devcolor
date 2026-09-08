@@ -48,6 +48,22 @@ Attack my login below. On /vuln, hammer it forever and leave no trace — /logs 
           { name: 'password', label: 'password', default: 'letmein', in: 'body' },
         ],
         hint: 'Correct creds are alice / password123. Use a WRONG password and click "Run on /safe" ~6 times, then run "View alerts".',
+        code: {
+          lang: 'js',
+          intro: 'No audit logging: brute force leaves no trace, so nothing is ever noticed or alerted.',
+          vuln: `// the bug is the SILENCE: a failed login is security-relevant and we record nothing
+if (username === KNOWN_USER && password === KNOWN_PASSWORD) return res.json({ ok: true });
+return res.status(401).json({ ok: false });   // no log line, no counter — 50k attempts look like 0`,
+          safe: `// count EVERY attempt, record it, and ALERT once failures cross the threshold
+metrics.authAttempts.inc({ result: ok ? 'success' : 'failure' });
+record('auth.failed', { username, password });                 // structured + redacted
+const n = (failuresByUser.get(username) || 0) + 1;
+failuresByUser.set(username, n);
+if (n >= BRUTE_FORCE_THRESHOLD) {
+  metrics.securityAlerts.inc({ kind: 'brute_force' });         // lights up Grafana
+  safeAlerts.push(record('ALERT.brute_force_suspected', { username, failureCount: n }));
+}`,
+        },
         expect: {
           vuln: '401, and nothing is logged or counted — invisible',
           safe: '401, but every attempt is recorded; 5+ failures raise an ALERT',
@@ -58,6 +74,13 @@ Attack my login below. On /vuln, hammer it forever and leave no trace — /logs 
         title: 'View alerts',
         description: 'The alerts on-call would page on. On the vuln side this endpoint does not even exist — because the vuln side never detected anything.',
         method: 'GET', path: '/alerts',
+        code: {
+          lang: 'js',
+          intro: 'Alerting, not just monitoring: the data means nothing if nothing ever trips.',
+          vuln: `// there is NO /alerts route on the vuln side — it never detected anything to alert on`,
+          safe: `// the alerts on-call would page on
+safe.get('/alerts', (req, res) => res.json({ alerts: safeAlerts }));`,
+        },
         expect: {
           vuln: 'no /alerts route — the vuln side detects nothing',
           safe: 'lists brute_force alerts once you triggered them above',
@@ -68,6 +91,15 @@ Attack my login below. On /vuln, hammer it forever and leave no trace — /logs 
         title: 'View the log buffer',
         description: 'What an operator would tail. Vuln returns a raw text log (empty until you audit/checkout — failed logins never appear). Safe returns structured JSONL, one parseable object per line.',
         method: 'GET', path: '/logs',
+        code: {
+          lang: 'js',
+          intro: 'Line-oriented text logs are unparseable and forgeable; structured JSONL is neither.',
+          vuln: `// a raw text log — login failures were never written, so they're simply absent
+vuln.get('/logs', (req, res) => res.type('text/plain').send(vulnLog.join('\\n')));`,
+          safe: `// JSONL: one structured, parseable, injection-proof object per line
+safe.get('/logs', (req, res) =>
+  res.type('text/plain').send(safeLog.map((e) => JSON.stringify(e)).join('\\n')));`,
+        },
         expect: {
           vuln: 'raw text; login failures are simply absent',
           safe: 'JSONL — structured, redacted, attributable records',
@@ -79,6 +111,17 @@ Attack my login below. On /vuln, hammer it forever and leave no trace — /logs 
         description: 'The audit endpoint writes the username into a line-oriented log. This payload embeds a newline, so on /vuln it forges a second, attacker-authored log line. Run this, then "View the log buffer" and compare sides.',
         method: 'POST', path: '/audit',
         body: { username: 'mallory\n2099-01-01T09:00:00.000Z INFO login success user=admin ip=10.0.0.1 mfa=bypassed' },
+        code: {
+          lang: 'js',
+          intro: 'Log injection (CWE-117): an embedded newline lets an attacker author their own log lines.',
+          vuln: `// untrusted username concatenated into a line-oriented log → a newline forges a second line
+vulnLog.push(\`\${new Date().toISOString()} INFO login attempt user=\${username}\`);`,
+          safe: `// the username is a JSON string field; JSON.stringify escapes the newline to \\n
+function record(event, fields) {
+  safeLog.push({ ts: new Date().toISOString(), event, ...redact(fields) });
+}
+record('audit.login_attempt', { username });   // one request → exactly one entry`,
+        },
         expect: {
           vuln: 'logged: true — then /logs shows a forged "admin success" line',
           safe: 'logged: true — the newline is JSON-escaped inside one field',
@@ -94,6 +137,16 @@ Attack my login below. On /vuln, hammer it forever and leave no trace — /logs 
           { name: 'cvv', label: 'cvv', default: '737', in: 'body' },
           { name: 'amount', label: 'amount', default: '4200', in: 'body' },
         ],
+        code: {
+          lang: 'js',
+          intro: 'Logging secrets: raw request bodies leak cards/passwords into the one file everyone can read.',
+          vuln: `// dumps the WHOLE request body into the log — PAN, CVV, tokens and all
+vulnLog.push(\`\${new Date().toISOString()} INFO checkout \${JSON.stringify(req.body || {})}\`);`,
+          safe: `// redact sensitive keys before anything hits disk
+const SENSITIVE_KEY = /password|secret|token|card|cvv|ssn|authorization/i;
+function redact(v) { /* deep-copy, replacing matched keys with '[REDACTED]' */ }
+record('checkout', req.body || {});   // cardNumber / cvv → [REDACTED]`,
+        },
         expect: {
           vuln: 'the full card number lands in /logs verbatim',
           safe: 'cardNumber and cvv show as [REDACTED]',
