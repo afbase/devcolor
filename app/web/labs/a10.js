@@ -42,6 +42,7 @@ Try it below: knock a dependency offline and see whether access is granted or de
         inputs: [{ name: 'state', label: 'state', default: 'down', options: ['down', 'up'] }],
         code: {
           lang: 'js',
+          src: { vuln: { anchor: 'let authzUp = true;', to: 'function permissionCheck' } },
           intro: 'This flips a shared switch that makes the permission check throw — the setup for the next action.',
           vulnLabel: '⚙️ The flaky permission check (shared by both sides)',
           vuln: `let authzUp = true;

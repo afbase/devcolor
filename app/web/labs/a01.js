@@ -67,6 +67,7 @@ res.json({ viewer: req.user.username, invoice });`,
         inputs: [{ name: 'who', label: 'Act as', default: 'bob', options: ['bob', 'alice', 'admin'] }],
         code: {
           lang: 'js',
+          src: { safe: { anchor: 'const requireRole', to: "safe.get('/admin/users'" } },
           intro: 'Forced browsing: the endpoint enforces nothing; being unlinked is not access control.',
           vuln: `// /vuln/a01/admin/users — the page just isn't linked. That's the only "lock".
 vuln.get('/admin/users', (req, res) => {

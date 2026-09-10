@@ -42,6 +42,7 @@ Try it below: compare how many packages were actually declared against how many 
         hint: 'Both sides return the same tree — that is the point. transitiveMultiplier is your real trust boundary.',
         code: {
           lang: 'js',
+          src: { vuln: { anchor: 'function scanNodeModules' } },
           intro: 'The risk isn\'t one line of code — it\'s how many packages (and install scripts) you actually trust. This is the measurement, served identically on both sides.',
           vulnLabel: '🔎 What actually landed in node_modules',
           vuln: `// walk node_modules; count what's really on disk and flag install-time scripts

@@ -72,6 +72,7 @@ if (n >= BRUTE_FORCE_THRESHOLD) {
         method: 'GET', path: '/alerts',
         code: {
           lang: 'js',
+          src: { vuln: false },   // the point of this action: there is no such route
           intro: 'Alerting, not just monitoring: the data means nothing if nothing ever trips.',
           vuln: `// there is NO /alerts route on the vuln side — it never detected anything to alert on`,
           safe: `// the alerts on-call would page on
@@ -109,6 +110,7 @@ safe.get('/logs', (req, res) =>
         body: { username: 'mallory\n2099-01-01T09:00:00.000Z INFO login success user=admin ip=10.0.0.1 mfa=bypassed' },
         code: {
           lang: 'js',
+          src: { safe: { anchor: 'function record' } },
           intro: 'Log injection (CWE-117): an embedded newline lets an attacker author their own log lines.',
           vuln: `// untrusted username concatenated into a line-oriented log → a newline forges a second line
 vulnLog.push(\`\${new Date().toISOString()} INFO login attempt user=\${username}\`);`,
@@ -135,6 +137,7 @@ record('audit.login_attempt', { username });   // one request → exactly one en
         ],
         code: {
           lang: 'js',
+          src: { safe: { anchor: 'const SENSITIVE_KEY', to: 'function redact' } },
           intro: 'Logging secrets: raw request bodies leak cards/passwords into the one file everyone can read.',
           vuln: `// dumps the WHOLE request body into the log — PAN, CVV, tokens and all
 vulnLog.push(\`\${new Date().toISOString()} INFO checkout \${JSON.stringify(req.body || {})}\`);`,

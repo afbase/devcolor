@@ -44,6 +44,7 @@ Try it below: sneak a dangerous key past an unfiltered deep-merge, or ship an un
         ],
         code: {
           lang: 'js',
+          src: { vuln: { anchor: 'function unsafeMerge' } },
           intro: 'The baseline. Both sides accept known keys — but look at HOW each one merges input.',
           vuln: `// unsafe deep-merge: walks every key and recurses on objects, with bracket access on the target
 function unsafeMerge(target, source) {
@@ -82,6 +83,7 @@ for (const key of Object.keys(input)) {
         hint: 'Watch pollutedBystanderObject — that object was never in the merge.',
         code: {
           lang: 'js',
+          src: { safe: { anchor: 'const FORBIDDEN_KEYS', to: "safe.post('/preferences'" } },
           intro: 'Prototype pollution: a nested __proto__ key walks into Object.prototype and poisons every object.',
           vuln: `// POST {"__proto__":{"isAdmin":true}} → unsafeMerge writes onto Object.prototype
 const merged = unsafeMerge({ ...PREFERENCE_DEFAULTS }, req.body || {});

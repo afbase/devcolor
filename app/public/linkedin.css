@@ -40,27 +40,14 @@ button{font:inherit;cursor:pointer}
 
 /* ---- feed post ---- */
 .post{padding:0}
-.post .head{display:flex;gap:10px;padding:12px 16px 4px}
+.post .head{display:flex;gap:10px;align-items:center;padding:14px 16px 6px}
 .post .head .avatar{width:56px;height:56px;font-size:15px;letter-spacing:-.02em;flex:0 0 auto}
 .post .who{min-width:0}
-.post .who .name{font-weight:700;color:var(--ink)}
+.post .who .name{font-weight:700;font-size:16px;color:var(--ink)}
 .post .who .name:hover{color:var(--blue-d)}
-.post .who .t{color:var(--muted);font-size:12.5px;line-height:1.35}
 .post .rank{margin-left:auto;font-size:11px;font-weight:700;color:var(--blue-d);background:var(--blue-bg);border-radius:999px;padding:3px 9px;height:fit-content;white-space:nowrap}
-.post .text{padding:4px 16px 12px;white-space:pre-wrap}
+.post .text{padding:2px 16px 16px;white-space:pre-wrap}
 .post .text .tag{color:var(--blue);font-weight:600}
-.post .figure{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.post .figure a{display:block;padding:18px 16px;background:linear-gradient(120deg,#0b2447,#19376d);color:#dfe8f5}
-.post .figure a:hover{text-decoration:none;filter:brightness(1.06)}
-.post .figure .k{font-size:11px;letter-spacing:.1em;font-weight:700;color:#7fb0e6;text-transform:uppercase}
-.post .figure .h{font-size:18px;font-weight:700;color:#fff;margin:4px 0 2px}
-.post .figure .d{font-size:13px;color:#c4d3ea}
-.post .figure .go{display:inline-block;margin-top:10px;font-weight:700;color:#fff;background:var(--blue);border-radius:999px;padding:6px 14px;font-size:13px}
-.post .social{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:8px 16px}
-.post .social .reacts::before{content:"👍❤️👏";margin-right:4px;font-size:11px}
-.post .bar{display:flex;border-top:1px solid var(--line);padding:4px 8px}
-.post .bar button{flex:1;background:none;border:0;color:var(--muted);font-weight:600;padding:10px;border-radius:6px;display:flex;gap:6px;align-items:center;justify-content:center}
-.post .bar button:hover{background:var(--hover)}
 
 /* composer / banner */
 .composer{padding:12px 16px}
@@ -79,7 +66,6 @@ button{font:inherit;cursor:pointer}
 .profile .idrow{padding:0 24px 20px;margin-top:-86px}
 .profile .idrow .avatar{width:148px;height:148px;font-size:34px;letter-spacing:-.03em}
 .profile h1{font-size:24px;margin:12px 0 2px}
-.profile .headline{font-size:16px;color:var(--ink)}
 .profile .actions{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
 .btn{border-radius:999px;padding:7px 16px;font-weight:700;font-size:14px;border:1px solid transparent}
 .btn.primary{background:var(--blue);color:#fff}
@@ -202,8 +188,15 @@ button{font:inherit;cursor:pointer}
 .cs-in{padding:12px;display:flex;flex-direction:column;gap:12px}
 .cs-intro{font-size:13px;color:#2b2f36;border-left:3px solid var(--blue);padding-left:10px}
 .cs-block{border:1px solid #1c2740;border-radius:8px;overflow:hidden}
-.cs-head{font-size:12px;font-weight:800;letter-spacing:.04em;padding:6px 12px;color:#fff;display:flex;align-items:center}
+.cs-head{font-size:12px;font-weight:800;letter-spacing:.04em;padding:6px 12px;color:#fff;display:flex;align-items:center;gap:8px}
 .cs-head.vuln{background:var(--red)}.cs-head.safe{background:var(--green)}
+.cs-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* "view the real file on GitHub" pill, right-aligned in the block header */
+.cs-src{margin-left:auto;flex:none;display:inline-block;max-width:55%;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;background:rgba(255,255,255,.18);color:#fff;
+  border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:2px 9px;
+  font-size:11px;font-weight:700;letter-spacing:.02em;text-decoration:none}
+.cs-src:hover{background:rgba(255,255,255,.3);text-decoration:underline}
 .cs-wrap{position:relative;background:#0d1117}
 .cs-wrap pre{margin:0;padding:12px 14px;overflow:auto;max-height:360px}
 .cs-wrap code{color:#e6eefb;font:12.5px/1.6 ui-monospace,Menlo,Consolas,monospace;white-space:pre;display:block}

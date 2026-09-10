@@ -235,8 +235,21 @@
       var sideName = row[0], src = row[1], label = row[2];
       if (src == null) return;
       var block = el('div', 'cs-block');
-      var head = el('div', 'cs-head ' + sideName,
-        label || (sideName === 'vuln' ? '🔓 Vulnerable' : '🔒 Fixed'));
+      var head = el('div', 'cs-head ' + sideName);
+      head.appendChild(el('span', 'cs-label',
+        label || (sideName === 'vuln' ? '🔓 Vulnerable' : '🔒 Fixed')));
+      // Deep link to the real handler this snippet was condensed from. The
+      // server resolves the line range from the file on disk (see
+      // app/web/source-links.js), so it can't drift out of date.
+      var link = c[sideName + 'Link'];
+      if (link) {
+        var srcLink = el('a', 'cs-src', '↗ ' + link.label);
+        srcLink.href = link.url;
+        srcLink.target = '_blank';
+        srcLink.rel = 'noreferrer';
+        srcLink.title = 'View the real source on GitHub — ' + link.title;
+        head.appendChild(srcLink);
+      }
       block.appendChild(head);
       var codeWrap = el('div', 'cs-wrap');
       var pre = el('pre'); pre.appendChild(el('code', null, src));

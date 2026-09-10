@@ -79,6 +79,7 @@ safe.use('/files', express.static(PUBLIC_FILES_DIR, { dotfiles: 'ignore', index:
         method: 'GET', path: '/debug',
         code: {
           lang: 'js',
+          src: { safe: { anchor: "if (process.env.ENABLE_DEBUG_ENDPOINTS" } },
           intro: 'A live /debug endpoint returns process.env — handy in dev, catastrophic in prod.',
           vuln: `// a debug endpoint that dumps the whole process environment — every secret it booted with
 vuln.get('/debug', (req, res) => res.json({ env: process.env }));`,
@@ -97,6 +98,7 @@ if (process.env.ENABLE_DEBUG_ENDPOINTS === '1') {
         hint: 'Note the internal hostname and user leaked in the message.',
         code: {
           lang: 'js',
+          src: { vuln: { anchor: 'vuln.use((err,' }, safe: { anchor: 'safe.use((err,' } },
           intro: 'A verbose error handler mails the stack trace (file paths, versions, secrets) to the attacker.',
           vuln: `// the error handler returns the raw stack trace to the client
 vuln.use((err, req, res, next) => {

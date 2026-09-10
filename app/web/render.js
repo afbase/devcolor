@@ -5,6 +5,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { renderMarkdown } = require('./markdown');
+const { withSourceLinks } = require('./source-links');
 
 const REPO = 'https://github.com/afbase/devcolor';
 const LABS_DIR = path.join(__dirname, '..', '..', 'labs');
@@ -53,7 +54,6 @@ function meCard() {
       <h2>You, the Pentester</h2>
       <div class="sub">Learning the OWASP Top 10 by breaking things</div>
       <div class="stat"><span>Labs to try</span><b>10</b></div>
-      <div class="stat"><span>Profiles saved</span><b>500+</b></div>
     </div>
     <div style="padding:6px 8px 10px" class="railnav">
       <a href="/">🏠 Home feed</a>
@@ -92,24 +92,10 @@ function postCard(lab) {
       <a href="/lab/${lab.code}"><div class="avatar" style="background:${esc(p.color)}">${lab.code.toUpperCase()}</div></a>
       <div class="who">
         <a class="name" href="/lab/${lab.code}">${esc(lab.title)}</a>
-        <div class="t">${esc(lab.rank || '')}</div>
-        <div class="t">${esc(po.time || '2h')} · 🌐 Public</div>
       </div>
       <div class="rank">${lab.code.toUpperCase()}</div>
     </div>
     <div class="text">${richText(po.summary)}</div>
-    <div class="figure"><a href="/lab/${lab.code}">
-      <div class="k">OWASP ${lab.code.toUpperCase()} · ${esc(lab.title)}</div>
-      <div class="h">${esc(po.headline || 'Visit the lab to try it')}</div>
-      <div class="d">${esc(po.cta || 'Run the vulnerability yourself')}</div>
-      <span class="go">Open lab &amp; try it →</span>
-    </a></div>
-    <div class="social"><span class="reacts">${esc(po.reactions || 0)}</span>
-      <span>${esc(po.comments || 0)} comments · ${esc(po.reposts || 0)} reposts</span></div>
-    <div class="bar">
-      <button>👍 Like</button><button>💬 Comment</button>
-      <button>🔁 Repost</button><button><a href="/lab/${lab.code}" style="color:inherit">➤ Try it</a></button>
-    </div>
   </div>`;
 }
 
@@ -147,7 +133,10 @@ function labGuide(code) {
 function renderProfile(lab) {
   const p = lab.persona, pr = lab.profile;
   const chips = (pr.highlights || []).map((h) => `<span class="chip">${esc(h)}</span>`).join(' ');
-  const labData = JSON.stringify({ code: lab.code, bench: lab.bench })
+  // Each code sample gets a deep link to the real handler on GitHub, resolved
+  // from the source on disk so the line numbers can't go stale.
+  const bench = withSourceLinks(lab.code, lab.bench, REPO);
+  const labData = JSON.stringify({ code: lab.code, bench })
     .replace(/</g, '\\u003c'); // safe to embed in a JSON script block
   const body = `<div class="shell" style="grid-template-columns:minmax(0,1fr) 380px;max-width:1320px">
     <div class="col">
@@ -156,7 +145,6 @@ function renderProfile(lab) {
         <div class="idrow">
           <div class="avatar" style="background:${esc(p.color)}">${lab.code.toUpperCase()}</div>
           <h1>${esc(lab.title)}</h1>
-          <div class="headline">OWASP ${lab.code.toUpperCase()} · ${esc(lab.rank || '')}</div>
           <div class="actions">
             <a class="btn ghost" href="/">← Back to feed</a>
           </div>
@@ -199,7 +187,6 @@ function renderProfile(lab) {
       </div>
       <div class="card pad">
         <h3>${lab.code.toUpperCase()} · ${esc(lab.title)}</h3>
-        <div class="mini">${esc(lab.rank || '')}</div>
         <div class="ops">
           <a href="/vuln/${lab.code}/" target="_blank">↗ /vuln/${lab.code}</a>
           <a href="/safe/${lab.code}/" target="_blank">↗ /safe/${lab.code}</a>
