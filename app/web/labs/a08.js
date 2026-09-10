@@ -19,17 +19,15 @@ module.exports = {
     reactions: 172, comments: 63, reposts: 29,
     headline: 'PayloadPipe: if it POSTs, we trust it',
     cta: 'Merge any JSON, apply any update — no questions asked',
-    text: `Thrilled to announce PayloadPipe 🚀 Our preferences service deep-merges whatever JSON you send straight onto our defaults — so flexible! And our auto-update channel applies any {name, payload} the instant it arrives. ⚡
-
-Signatures? Checksums? Provenance? That's friction, and we are a FRICTIONLESS org. If the request made it to my server, clearly it's legit. 😌
-
-#devops #supplychain #shipfast #trustme #integrityisavibe`,
+    summary: `Code or data is trusted without verifying where it came from — deep-merging arbitrary JSON straight onto internal objects, or applying an "update" with no signature or checksum to confirm it's actually legitimate before it runs.`,
   },
   profile: {
     headline: 'Head of Auto-Updates @ PayloadPipe · "just merge it"',
-    about: `I never met a payload I didn't trust. Send my preferences endpoint some JSON and I'll recursively merge it onto my objects — every key, no filtering. Push an "update" to my apply-update channel and I'll run it without ever checking who signed it.
+    about: `Software or data integrity failures happen when code or data is trusted without verifying where it came from or whether it was tampered with — no signature, checksum, or provenance check before it's applied. Deep-merging untrusted JSON onto internal objects, or auto-applying an unsigned "update", both skip the one question that actually matters: did this come from somewhere trustworthy?
 
-Play with my services below. Sneak a dangerous key past my deep-merge, or ship me an unsigned "update" and watch me apply it. The fixed side keeps an allow-list and demands a valid HMAC signature — the whole point of integrity.`,
+Once that check is skipped, anything the attacker can get accepted as input becomes something the system will treat as its own trusted state.
+
+Try it below: sneak a dangerous key past an unfiltered deep-merge, or ship an unsigned "update" and watch it get applied with no verification at all.`,
     highlights: ['Prototype pollution', 'Unsafe deep-merge', 'Unsigned updates', 'No provenance (CWE-345)'],
   },
   bench: {

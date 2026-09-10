@@ -20,19 +20,15 @@ module.exports = {
     reactions: 402, comments: 118, reposts: 57,
     headline: 'DepDrop: we keep our dependency footprint tiny 🌱',
     cta: 'Count the packages you actually trust',
-    text: `Proud of the DepDrop team 🙌 We keep it lean — our package.json lists just a handful of dependencies. Minimalism is a security posture!
-
-Our build is dead simple too: "npm install" and go. Fresh resolve every time keeps us on the latest patches automatically. Why pin versions when the ecosystem moves this fast? 🤷
-
-Someone on my team asked about our "lockfile discipline" and honestly I told them lockfiles are just cache. We move faster without the ceremony.
-
-#supplychain #opensource #startup #buildinpublic #leanstack`,
+    summary: `The dependencies you didn't write are still code that runs on your machine. Unpinned version ranges, install-time lifecycle scripts, and a sprawling transitive tree mean a plain "npm install" can quietly pull in — and execute — far more than what's listed in package.json.`,
   },
   profile: {
     headline: 'Founder & CEO @ DepDrop · "we only have a few dependencies"',
-    about: `I tell everyone DepDrop runs on a tiny, hand-picked set of dependencies. It's my favorite line at conferences.
+    about: `Software supply chain failures come from trusting code you didn't write and can't fully see. Every dependency — and every dependency of that dependency — can execute code on your machine, whether through an install-time lifecycle script or the package itself. Unpinned version ranges and unaudited lockfiles mean the code that actually ships can quietly differ from what a developer reviewed.
 
-Call my bluff on the bench below. Ask /inventory how many packages I *wrote down* versus how many npm actually dropped into node_modules — and how many of those run code on my build machine the instant I install. Then compare /resolution on both sides: my "npm install and ship it" posture versus the pinned, locked, "npm ci --ignore-scripts" one I keep meaning to adopt.`,
+The handful of packages listed in package.json is rarely the real picture; the transitive tree that npm resolves underneath it usually is.
+
+Try it below: compare how many packages were actually declared against how many npm actually installed, then compare a loose "npm install" against a pinned, locked, script-free "npm ci --ignore-scripts".`,
     highlights: ['Transitive dependency sprawl', 'Install-time lifecycle scripts', 'Unpinned caret ranges', 'npm install vs npm ci', 'Lockfile discipline'],
   },
   bench: {

@@ -24,9 +24,11 @@ services:
       # mkcert cert if you ran `npm run tls:setup`; self-signed fallback otherwise.
       TLS_CERT: "/certs/localhost.pem"
       TLS_KEY: "/certs/localhost-key.pem"
-      # Links shown on the portal page.
-      GRAFANA_URL: "http://localhost:3001"
-      PROMETHEUS_URL: "http://localhost:9090"
+      # Links shown on the portal page. Override them (see .env.example) when
+      # the stack is published behind a tunnel, so the rail links point at the
+      # public hostnames instead of someone else's localhost.
+      GRAFANA_URL: "${GRAFANA_URL:-http://localhost:3001}"
+      PROMETHEUS_URL: "${PROMETHEUS_URL:-http://localhost:9090}"
     volumes:
       - lab-data:/data
       - ./certs:/certs:ro
@@ -72,6 +74,9 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
+      # Grafana builds redirects and share links from this; behind a tunnel it
+      # has to be the public origin or logins bounce back to localhost.
+      GF_SERVER_ROOT_URL: "${GRAFANA_URL:-http://localhost:3001}"
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_USERS_DEFAULT_THEME: dark

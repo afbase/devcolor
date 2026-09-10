@@ -79,9 +79,9 @@
     renderCurl(a, inputs, curlBody);
     if (a.hint) card.appendChild(el('div', 'termhint', '💡 ' + a.hint));
 
-    // The code behind the action: the actual vulnerable snippet and its fix, so
-    // the lesson goes past "run this curl" into "here is WHY it breaks". Folded
-    // into a details so the try-it flow stays uncluttered.
+    // The code behind the action: the actual vulnerable snippet and its fix,
+    // shown inline with the rest of the card so the lesson goes past "run this
+    // curl" into "here is WHY it breaks".
     if (a.code) card.appendChild(buildCodeSample(a));
 
     // SECONDARY, tucked away: the same requests as one-click buttons.
@@ -220,12 +220,15 @@
   // Render the vulnerable/fixed source snippets for an action. `a.code` is
   // { lang, intro, vuln, safe, vulnLabel, safeLabel, note } — vuln/safe are
   // source strings; either may be omitted (e.g. a safe-only endpoint). Each
-  // snippet gets its own Copy button, mirroring the curl blocks above.
+  // snippet gets its own Copy button, mirroring the curl blocks above. Always
+  // visible: the fix belongs next to the exploit, not behind a click.
   function buildCodeSample(a) {
     var c = a.code;
     var lang = c.lang || 'js';
-    var det = el('details', 'codesample');
-    det.appendChild(el('summary', null, '📄 The code behind it — the vulnerability, and the fix'));
+    var wrap = el('div', 'codesample');
+    var title = el('div', 'cs-title', 'The code behind it');
+    title.appendChild(el('span', 'cs-lang', lang.toUpperCase()));
+    wrap.appendChild(title);
     var inner = el('div', 'cs-in');
     if (c.intro) inner.appendChild(el('div', 'cs-intro', c.intro));
     [['vuln', c.vuln, c.vulnLabel], ['safe', c.safe, c.safeLabel]].forEach(function (row) {
@@ -234,22 +237,21 @@
       var block = el('div', 'cs-block');
       var head = el('div', 'cs-head ' + sideName,
         label || (sideName === 'vuln' ? '🔓 Vulnerable' : '🔒 Fixed'));
-      head.appendChild(el('span', 'cs-lang', lang));
       block.appendChild(head);
-      var wrap = el('div', 'cs-wrap');
+      var codeWrap = el('div', 'cs-wrap');
       var pre = el('pre'); pre.appendChild(el('code', null, src));
-      wrap.appendChild(pre);
+      codeWrap.appendChild(pre);
       var copy = el('button', 'copy', 'Copy');
       copy.onclick = (function (text, btn) {
         return function () { copyText(text, btn); };
       })(src, copy);
-      wrap.appendChild(copy);
-      block.appendChild(wrap);
+      codeWrap.appendChild(copy);
+      block.appendChild(codeWrap);
       inner.appendChild(block);
     });
     if (c.note) inner.appendChild(el('div', 'cs-note', c.note));
-    det.appendChild(inner);
-    return det;
+    wrap.appendChild(inner);
+    return wrap;
   }
 
   function run(a, s, inputEls, out) {
@@ -418,5 +420,34 @@
     });
   }
 
+  // ===========================================================================
+  // Generic tab strips (e.g. the Background / Read the lab tabs on a profile
+  // page): <ul class="nav nav-tabs"> of links matched to .tab-pane siblings by
+  // data-tab/data-panel. The links point at the panel ids, so they still mean
+  // something with JS off.
+  // ===========================================================================
+  function initTabStrips() {
+    var strips = document.querySelectorAll('.nav-tabs');
+    Array.prototype.forEach.call(strips, function (strip) {
+      var group = strip.parentNode;
+      var panes = group.querySelectorAll('.tab-pane');
+      var links = strip.querySelectorAll('.nav-link');
+      Array.prototype.forEach.call(links, function (link) {
+        link.onclick = function (e) {
+          e.preventDefault();
+          Array.prototype.forEach.call(links, function (l) {
+            var on = l === link;
+            l.classList.toggle('active', on);
+            l.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          Array.prototype.forEach.call(panes, function (p) {
+            p.classList.toggle('active', p.dataset.panel === link.dataset.tab);
+          });
+        };
+      });
+    });
+  }
+
   initConsole();
+  initTabStrips();
 })();

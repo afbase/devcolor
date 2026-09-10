@@ -20,19 +20,15 @@ module.exports = {
     reactions: 88, comments: 41, reposts: 12,
     headline: 'NullTail: our dashboards are always green',
     cta: 'No logs, no failed-login noise, no 3am pages',
-    text: `Another flawless quarter at NullTail 🟢 Zero security incidents on record — literally, we don't record any. Failed logins? We don't log them. Brute force? Never seen one (because we're not looking). 😎
-
-Our secret: if you don't collect the evidence, there's nothing to investigate. Peace of mind through willful blindness. 🧘
-
-Meanwhile the "paranoid" fixed service next door counts every attempt, redacts secrets, and actually PAGES on brute force. Exhausting.
-
-#observability #uptime #ignoranceisbliss #greendashboard #devops`,
+    summary: `Attacks that succeed and leave no trace: failed logins that are never recorded, log lines an attacker can forge with a well-placed newline, secrets written straight to disk, and no alert ever firing while a brute-force run is happening.`,
   },
   profile: {
     headline: 'Head of "It’s Fine" Ops @ NullTail · sees no evil',
-    about: `I run the quietest SOC in the business — because nothing is ever logged. Failed logins vanish. I concatenate raw usernames into my log file, so a well-placed newline lets you write your own log lines. And I dump entire request bodies to disk, card numbers and all.
+    about: `Security logging and alerting failures mean an attack can succeed and leave no usable trace: events that are never recorded, log lines an attacker can forge or poison, sensitive data written to disk unredacted, and no alert firing while the attack is actually happening. Without that visibility, detection and response depend entirely on luck.
 
-Attack my login below. On /vuln, hammer it forever and leave no trace — /logs stays empty, /alerts doesn't even exist. On /safe, run the login ~6 times and watch a brute-force ALERT appear at /alerts and light up Grafana (http://localhost:3001), while /vuln shows nothing. Then forge a log line, and try leaking a card number through checkout.`,
+This category rarely looks dramatic in the moment — the damage shows up later, when there's simply nothing to investigate.
+
+Try it below: hammer the login and see whether anything gets recorded, forge a log line with a well-placed newline, or leak a card number through checkout — then compare against the side that logs, redacts, and actually alerts on a brute-force run (watch it show up live on Grafana at :3001).`,
     highlights: ['No audit logging', 'Log injection (CWE-117)', 'Logging secrets', 'No alerting (brute force)'],
   },
   bench: {

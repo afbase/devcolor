@@ -70,6 +70,34 @@ Stop it with `Ctrl-C`, and `docker compose down -v` to remove the volumes.
 > Compose network. That's the point: the only way to reach it is through the
 > app's SSRF vulnerability (lab A01).
 
+### Sharing it over a Cloudflare tunnel (optional)
+
+One `cloudflared` tunnel can carry all three services — add a **public
+hostname** per origin on the same tunnel (Cloudflare Zero Trust → Networks →
+Tunnels → your tunnel → *Public Hostnames*):
+
+| Public hostname | Service (origin) | Setting that matters |
+|-----------------|------------------|----------------------|
+| `devcolor.example.org` | `https://localhost:3000` | tick **No TLS Verify** — the lab's cert is mkcert/self-signed |
+| `grafana.example.org` | `http://localhost:3001` | — |
+| `prometheus.example.org` | `http://localhost:9090` | — |
+
+Remote config applies in seconds; no `cloudflared` restart, and the DNS records
+are created for you. Then point the portal's rail links at the public names so
+they work for everyone, not just whoever is at the host:
+
+```bash
+cp .env.example .env       # set GRAFANA_URL / PROMETHEUS_URL
+docker compose up -d       # Compose reads .env
+```
+
+> **Put Cloudflare Access in front of all three.** Prometheus has no
+> authentication whatsoever, Grafana ships here with anonymous viewer access and
+> `admin`/`admin`, and the lab app is deliberately vulnerable — that's the whole
+> point of it. A tunnel with no Access policy publishes all of that to anyone who
+> guesses the hostname. One self-hosted Access application per hostname, scoped
+> to the emails or the identity provider group in the room, is enough.
+
 ### Prove your work
 
 ```bash

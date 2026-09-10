@@ -21,7 +21,7 @@ function placeholder(code, title, rank) {
   return {
     code, title, rank,
     persona: { name: title, title: `OWASP ${code.toUpperCase()}`, company: title, avatar: code.toUpperCase().slice(1), color: '#5f6b7a', location: 'The Internet', connections: '500+' },
-    post: { time: '1h', text: `Profile for ${title} is being set up.`, headline: title, cta: 'Coming online shortly', reactions: 0, comments: 0, reposts: 0 },
+    post: { time: '1h', summary: `Profile for ${title} is being set up.`, headline: title, cta: 'Coming online shortly', reactions: 0, comments: 0, reposts: 0 },
     profile: { headline: title, about: 'This lab profile is being built.', highlights: [] },
     bench: { intro: 'Bench coming online.', actions: [] },
   };

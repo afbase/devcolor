@@ -19,19 +19,15 @@ module.exports = {
     reactions: 173, comments: 62, reposts: 24,
     headline: 'LaunchPad Cloud: zero-config, zero-friction, zero-downtime 🚀',
     cta: 'Our "sensible defaults" mean we never touch config',
-    text: `Just migrated LaunchPad to prod in a single afternoon 😎 No YAML, no hardening checklist, no fuss — we ship on the framework defaults because the framework knows best, right?
-
-Bonus: I left the /debug endpoint on so on-call can eyeball the environment, and our static /files folder means marketing can drop brochures without a deploy. Efficiency! 💪
-
-"Security review" is just friction we haven't scheduled. We'll harden it after the launch party.
-
-#devops #shipit #cloudnative #movefast #nofilter`,
+    summary: `Insecure defaults left switched on: a fingerprinting header, a listable directory that leaks a forgotten backup file, a debug endpoint that dumps the process environment, a stack trace mailed back to the client, a cookie missing its security flags. Nothing exotic — just settings nobody ever changed before shipping to production.`,
   },
   profile: {
     headline: 'Head of DevOps @ LaunchPad Cloud · "the defaults are fine"',
-    about: `I run the platform that runs your startup. LaunchPad is fast because I don't waste time on config: default headers, an open static folder, a debug endpoint for the on-call rotation, and verbose errors so my team can actually fix things.
+    about: `Security misconfiguration happens when a system ships with insecure defaults, unnecessary features left switched on, or hardening steps skipped under time pressure. It rarely takes a clever exploit — an exposed debug endpoint, a directory listing, a verbose error page, or a cookie missing its security flags is often enough on its own to leak secrets or widen the attack surface.
 
-Go ahead — poke at the bench below. Read the directory index for a folder I forgot about. Download the file I definitely didn't mean to leave there. Ask /debug what secrets I booted with. Crash a route and read the stack. Then flip to Fixed and watch every one of those doors close.`,
+The failures tend to compound: one forgotten setting leads directly to the next, and none of them require a single line of "hacking" to find.
+
+Try it below: browse a directory nobody meant to expose, download a leftover backup file, dump the process environment through a debug endpoint, crash a route and read the stack, then compare the session cookie's flags side by side.`,
     highlights: ['Fingerprinting headers', 'Directory listing', 'Leaked .env.backup', 'Debug env dump', 'Stack-trace disclosure', 'Flagless cookies'],
   },
   bench: {

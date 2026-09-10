@@ -19,19 +19,15 @@ module.exports = {
     reactions: 342, comments: 88, reposts: 41,
     headline: 'QueryCraft: raw SQL, raw speed, raw HTML',
     cta: 'String-concatenate your way to production 🚀',
-    text: `Hot take: ORMs are training wheels. At QueryCraft we build queries the honest way — string templates, right off the request 💅
-
-Shipped this week: instant login, a UNION-friendly invoice search, a handy "ping this host" diagnostics tool, and a guestbook that renders your feedback EXACTLY as you typed it. No sanitizing, no encoding, no nannying.
-
-If little Bobby's school ever calls, tell them we're hiring.
-
-#rawSQL #shipfast #nosanitizer #webdev #security`,
+    summary: `Untrusted input gets interpreted as code by a downstream interpreter — SQL, an OS shell, or a browser's HTML parser. String-built queries and unescaped output let user-supplied data become commands: bypassing a login, exfiltrating a whole table, or running a script in someone else's browser session.`,
   },
   profile: {
     headline: 'Founder @ QueryCraft · "have you tried just not escaping it?"',
-    about: `I hand-write every query and every HTML string. It's faster, and my inputs would never lie to me.
+    about: `Injection happens when untrusted input reaches an interpreter — a SQL engine, an OS shell, or a browser's HTML/JS parser — without being kept separate from the commands or structure it's inserted into. The interpreter can't tell attacker-supplied data apart from instructions, so that input ends up executing as part of the query, the command, or the page itself.
 
-Play with my portal below. Log in as admin without the password. Make the invoice search hand you the users table. Chain a second command onto my ping tool. Or drop a <script> into the guestbook and watch it run for everyone who visits after you. The DATA channel and the CODE channel are the same channel here — enjoy.`,
+The same root cause shows up in very different-looking bugs: a login bypass, a data leak, and a script running in someone else's browser can all trace back to one missing boundary between data and code.
+
+Try it below: log in as admin without a password, make an invoice search hand you the entire users table, chain a second command onto a diagnostics tool, or drop a script into a guestbook and watch it execute for the next visitor.`,
     highlights: ['SQLi auth bypass', 'UNION exfiltration', 'OS command injection', 'Reflected XSS', 'Stored XSS'],
   },
   bench: {

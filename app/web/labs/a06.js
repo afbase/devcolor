@@ -19,19 +19,15 @@ module.exports = {
     reactions: 271, comments: 63, reposts: 29,
     headline: 'Refundr: friction is the only real bug',
     cta: 'Every flow is valid on its own — trust me',
-    text: `At Refundr we believe security reviews kill velocity 🏎️ Every line of our checkout, refund, and account-recovery code does EXACTLY what it was designed to do.
-
-Highlights this quarter: stack as many coupons as your heart desires 🎟️, self-serve refunds with zero paperwork 💸, and instant password recovery — just tell us your mother's maiden name.
-
-No threat model, no invariants, no "but what if a user does that on purpose." Delight first!
-
-#growth #frictionless #designthinking #fintech #security`,
+    summary: `Flaws that live in the plan, not in a single buggy line — a checkout, refund, or account-recovery flow that runs exactly as designed, but the design never wrote down the invariant (one coupon per order, never refund more than was charged) that would have made it safe.`,
   },
   profile: {
     headline: 'VP Growth Design @ Refundr · "each step is valid, the sequence is the exploit"',
-    about: `I design flows, not defenses. Nobody ever wrote down the rule "one coupon per order" or "never refund more than you charged," so those rules don't exist here.
+    about: `Insecure design is a flaw in the plan, not a typo in the code — a flow that behaves exactly as it was built to, because no one ever wrote down the rule that would have made it safe. A checkout, refund, or recovery flow can pass every code review and still be exploitable if it never accounts for a user acting in bad faith.
 
-Poke at my money below. Stack coupons until the order is free. Refund an invoice for more than it ever cost and watch the balance climb. Recover an account with a maiden name anyone could guess. The code is "correct" — the design is the wound.`,
+That's what makes this category different: there's no single line to patch, because the code isn't technically wrong — the missing invariant was never part of the design in the first place.
+
+Try it below: stack coupons until the order is free, refund an invoice for more than it ever cost, or recover an account using a "secret" that anyone could guess.`,
     highlights: ['Coupon stacking', 'Missing refund invariant', 'Refund > charge', 'Knowledge-based recovery', 'Account enumeration oracle'],
   },
   bench: {

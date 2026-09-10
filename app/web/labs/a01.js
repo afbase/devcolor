@@ -18,17 +18,15 @@ module.exports = {
     reactions: 214, comments: 47, reposts: 18,
     headline: 'InvoiceFlow: your invoices, one URL away',
     cta: 'Peek at how our access control (doesn’t) hold up',
-    text: `Big week at InvoiceFlow 🎉 We shipped our new customer invoice portal — clean URLs like /invoices/1001, an admin console, and a slick "unfurl this link" preview for webhooks.
-
-"Move fast" is our motto. We'll add the authorization checks later 😅
-
-#shipit #webdev #security #startuplife`,
+    summary: `Users can act outside their intended permissions — reading someone else's records by changing an id in the URL, reaching an admin page that was simply never linked, or triggering an action a hidden button was supposed to gate. Server-side requests to an attacker-chosen URL (SSRF) now fall under this category too, since the root cause is the same: nothing on the server confirmed the request was allowed.`,
   },
   profile: {
     headline: 'Staff Engineer @ InvoiceFlow · "we\'ll add auth later"',
-    about: `I build fast. InvoiceFlow lets customers view invoices by ID, browse the admin console, and preview any webhook URL.
+    about: `Broken access control means the application fails to enforce what an authenticated user is actually allowed to do. A user can read, modify, or reach data or actions outside their own permissions — often just by changing an id in a URL, guessing an unlinked path, or calling an endpoint the UI never exposed a button for.
 
-Try my portal below. Read an invoice that isn't yours. Walk into the admin list. Or paste an internal URL into the link previewer and see where it goes — our server has opinions your browser doesn't.`,
+Server-side requests made on a user's behalf are held to the same standard: if the destination isn't validated, an attacker can make the server reach internal systems it was never meant to expose (SSRF).
+
+Try it below: read an invoice that isn't yours, walk into the admin list, trigger the "admin-only" action as a regular user, or paste an internal URL into the link previewer and see where the server actually goes.`,
     highlights: ['IDOR', 'Forced browsing', 'Client-side-only checks', 'SSRF (CWE-918)'],
   },
   bench: {

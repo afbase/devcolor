@@ -20,17 +20,15 @@ module.exports = {
     reactions: 133, comments: 58, reposts: 21,
     headline: 'FailOpen: when in doubt, allow it',
     cta: 'Fail open, leak the stack, and never wrap a transaction',
-    text: `Real talk about resilience 🧵 At FailOpen we have a simple rule: when a security check errors out, just let the request through. Availability > paranoia! If our authz service blips, everyone gets to be admin for a bit. No biggie. 🤷
-
-Bonus: our error responses include the full stack trace so users can "self-serve debug." And our money transfers? Two writes, no transaction — if step two fails we simply... don't put the money back. It builds character. 💸
-
-#resilience #errorhandling #failopen #movefast #whatcouldgowrong`,
+    summary: `Error paths that pick the least safe option: failing open when a security check itself errors out, returning a full stack trace to the client instead of an opaque message, or leaving a multi-step write half-finished when the second step fails.`,
   },
   profile: {
     headline: 'Principal Engineer, Error Handling @ FailOpen · catch { allow: true }',
-    about: `My catch blocks are optimists. When my authz service goes down, I assume you're allowed. When a query throws, I hand you err.message and err.stack. When a money transfer dies halfway, I keep the debit and skip the credit.
+    about: `Mishandling of exceptional conditions is about what a system does once something has already gone wrong: does it fail open or closed, does the error response leak internal detail, and does a partially completed operation get rolled back or left half-done. Error paths get far less testing than the happy path, which is exactly why they tend to default to the least safe option.
 
-Break me below. Knock the authz service offline, then perform an admin action as a nobody and watch /vuln wave you through while /safe fails closed with a 503. Throw a bad table name at my report and read my stack trace. Or run a transfer that fails midway and check /balances — on /vuln the money just vanishes; on /safe the whole thing rolls back and the total is conserved.`,
+The failure itself often isn't the real bug — it's the untested assumption baked into whatever happens next.
+
+Try it below: knock a dependency offline and see whether access is granted or denied by default, throw a bad input and see what the error response reveals, or interrupt a multi-step transfer partway through and check whether the total is conserved.`,
     highlights: ['Fail-open authz', 'Stack trace leakage (CWE-209)', 'Non-atomic writes', 'Lost money on failure'],
   },
   bench: {

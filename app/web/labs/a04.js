@@ -19,19 +19,15 @@ module.exports = {
     reactions: 128, comments: 91, reposts: 12,
     headline: 'VaultBro: cryptography, but make it fast ⚡',
     cta: 'Guess a reset token before it expires',
-    text: `Hot take from the VaultBro lab 🔐 We built our own crypto stack because the standard libraries are honestly overkill.
-
-Our password-reset tokens? Generated instantly with Math.random() — plenty random for me. Our encryption? Classic AES, nice and speedy, none of that "authentication tag" overhead slowing us down. And we hash passwords with good old MD5 because it's blazingly fast. Speed IS a feature.
-
-A "researcher" DMed me saying our tokens are predictable. Jealous, probably.
-
-#cryptography #infosec #performance #rollyourown #trustme`,
+    summary: `Sensitive data protected with weak or misused cryptography: predictable tokens from an insecure random number generator, fast unsalted hashes used for passwords, and encryption without authentication that lets ciphertext be tampered with and go completely undetected.`,
   },
   profile: {
     headline: 'Chief Cryptography Officer @ VaultBro · "we rolled our own"',
-    about: `I do cryptography the fast way. VaultBro mints reset tokens with Math.random(), hashes with MD5 because speed, and encrypts with plain AES-CBC — who needs an auth tag?
+    about: `Cryptographic failures happen when sensitive data is protected with weak, outdated, or misused cryptography rather than with nothing at all — which can be more dangerous, because it looks secure. Predictable random number generators, unsalted fast hashes, and encryption without integrity checking each give an attacker a practical way to forge, crack, or tamper with data that was supposed to be protected.
 
-Break it on the bench. Pull a reset-token a few times and watch how guessable it is. Ask for the password hashes and crack them in your head. Seal a payload, flip a byte of the ciphertext, and unseal it — no key required. Then flip to Fixed: CSPRNG tokens, a 403 where the hashes used to be, a constant-time verify, and AES-GCM that throws the moment you tamper.`,
+The pattern to notice: cryptography that is merely present isn't the same as cryptography that's actually sound.
+
+Try it below: pull a password-reset token a few times and watch how guessable it is, ask for the password hashes and see how fast they crack, then seal a payload, flip a single byte of the ciphertext, and unseal it again with no key required.`,
     highlights: ['Predictable tokens (Math.random)', 'Unsalted MD5 hashes', 'Exposed password material', 'AES-CBC bit-flipping', 'Static IV', 'No authentication tag'],
   },
   bench: {

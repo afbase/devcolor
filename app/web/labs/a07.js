@@ -19,19 +19,15 @@ module.exports = {
     reactions: 188, comments: 52, reposts: 22,
     headline: 'PassKey-Optional: auth, but make it optional',
     cta: 'admin/admin still works and we’re proud of it',
-    text: `Unpopular opinion: rate limiting is hostile to power users 🙅 At PassKey-Optional we kept the login SIMPLE.
-
-The password check is technically correct! We also kept the default admin/admin (migration risk 🤷), tell you exactly which field was wrong so you can fix it faster, happily accept "password123", and reuse whatever session id your browser shows up with. Efficiency!
-
-MFA is on the roadmap. The roadmap is also optional.
-
-#identity #devex #login #nolockout #security`,
+    summary: `Weaknesses around proving identity that go well past the password comparison itself — no rate limiting or lockout, default credentials left in place, an error message that confirms which accounts exist, breached passwords accepted at signup, and a session id that survives login instead of rotating.`,
   },
   profile: {
     headline: 'Head of Identity @ PassKey-Optional · "the password compare is the easy part (and the only part we did)"',
-    about: `The login below verifies passwords "correctly" and is still broken five ways: default creds, no throttling, a username oracle, breached passwords accepted, and session fixation.
+    about: `Authentication failures cover everything around proving identity besides the password comparison itself: rate limiting, lockouts, session handling, default credentials, and whether a breached password is even rejected at signup. A login can get every individual check "right" and still be trivially attackable if these surrounding controls are missing.
 
-Log in as admin/admin. Change just the username and watch the error message tattle on whether the account exists. Register with "password123". Plant a session id and see it survive login. The safe side locks accounts, blocks breached passwords, gives ONE identical error, and rotates the session on every login.`,
+That's the trap with this category — the part everyone tests (does the right password work?) is rarely the part that's actually broken.
+
+Try it below: log in with default credentials, change only the username and watch the error message reveal whether the account exists, register with a known-breached password, or plant a session id and see if it survives login.`,
     highlights: ['Default credentials', 'Credential stuffing / spray', 'Username oracle', 'Breached-password reuse', 'Session fixation'],
   },
   bench: {
